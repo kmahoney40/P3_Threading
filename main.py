@@ -10,32 +10,36 @@ daqc_dict = [0]
 # relay-plate. The shared innput dictioary can be expanded to include weahter data that may be used
 # to dynamically modife runtimes.
 class sprinklerThread(threading.Thread):
-    def __init__(self, threadID, name, counter, in_dict):
+    def __init__(self, threadID, name, in_dict, event):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.in_dict = in_dict
+        self.event = event
 
     def run(self):
         #print("Starting " + self.name)
-        while 1:
+        while not self.event.is_set():
             self.in_dict[0] += 1
-            time.sleep(1)
+            #time.sleep(1)
+            self.event.wait(timeout=1)
 
 # The daqcThread calss will read/write the daqc-plate and a relay-plate to monitor temps in and
 # outside of the garage and control an exhaust fan.
 class daqcThread(threading.Thread):
-    def __init__(self, threadID, name, counter, in_dict):
+    def __init__(self, threadID, name, in_dict, event):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.in_dict = in_dict
+        self.event = event
 
     def run(self):
         #print("Starting " + self.name)
-        while 1:            
+        while not self.event.is_set():            
             self.in_dict[0] += 1
-            time.sleep(5)
+            #time.sleep(5)
+            self.event.wait(timeout=5)
 
 
 def main(scr):
@@ -46,12 +50,12 @@ def main(scr):
     scr.keypad(1)
     scr.nodelay(1)
 
+    e = threading.Event()
     threads = []
 
     # Create new threads
-    thread1 = sprinklerThread(1, "sprinklerThread", 0, sprinkler_dict)
-    thread2 = daqcThread(2, "daqcThread", 0, daqc_dict)
-    #thread3 = uiThread(3, "uiThread", 0, sprinkler_dict, daqc_dict, scr)
+    thread1 = sprinklerThread(1, "sprinklerThread", sprinkler_dict, e)
+    thread2 = daqcThread(2, "daqcThread", daqc_dict, e)
 
     # Start new Threads
     thread1.start()
@@ -72,16 +76,23 @@ def main(scr):
         scr.refresh()
         ct += 1
 
+    e.set()
+
     # Wait for all threads to complete
     for t in threads:
         t.join()
-    print ("Exiting Main Thread")
 
     scr.refresh()
 
-    curses.endwin()
+    #curses.endwin()
+
+# def main
 
 if __name__ == '__main__':
-       
-    curses.wrapper(main)
-        
+    try:
+        curses.wrapper(main)
+    finally:
+        curses.endwin()
+# if __name__
+
+
