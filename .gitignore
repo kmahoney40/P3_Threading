@@ -31,6 +31,11 @@ MANIFEST
 *.manifest
 *.spec
 
+# vim files
+
+# vim files
+.swp
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
