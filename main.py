@@ -18,14 +18,35 @@ def main(scr):
     scr.keypad(1)
     scr.nodelay(1)
 
+    headder_begin_x = 0; headder_begin_y = 0
+    headder_height = 5; headder_width = 80
+
+    body_begin_x = headder_begin_x; body_begin_y = headder_begin_y + headder_height
+    body_height = 20; body_width = headder_width
+
+    foot_begin_x = body_begin_x; foot_begin_y = body_begin_y + body_height
+    foot_height = 5; foot_width = headder_width
+
+    headder_win = curses.newwin(headder_height, headder_width, headder_begin_y, headder_begin_x)
+    headder_win.border()
+    
+    body_win = curses.newwin(body_height, body_width, body_begin_y, body_begin_x)
+    body_win.border()
+
+    foot_win = curses.newwin(foot_height, foot_width, foot_begin_y, foot_begin_x)
+    foot_win.border()
+
     e = threading.Event()
+    update_events = [threading.Event(), threading.Event()]
+    escapekey = False
     threads = []
     ll = logger.logger("main")
 
     # Create new threads
-    thread1 = sprinklerThread.sprinklerThread(1, "sprinklerThread", sprinkler_dict, e)
-    thread2 = tempThread.daqcThread(2, "daqcThread", daqc_dict, e)
+    thread1 = sprinklerThread.sprinklerThread(1, "sprinklerThread", sprinkler_dict, e, update_events[0])
+    thread2 = tempThread.daqcThread(2, "daqcThread", daqc_dict, e, update_events[1])
 
+    
     # Start new Threads
     thread1.start()
     thread2.start()
@@ -34,30 +55,51 @@ def main(scr):
     threads.append(thread1)
     threads.append(thread2)
    
-    ct = 0
-    while ct < 1000:
-        ll.log("main: " + str(ct))
-        time.sleep(5)
-        #scr.addstr(6,5,  "sprinkler: " + str(sprinkler_dict[0]))
-        #scr.addstr(7,5,  "daqc: " + str(daqc_dict[0]))
-        #scr.addstr(8,5,  "daqc: " + str(daqc_dict[1]))
-        #scr.addstr(9,5,  "daqc: " + str(daqc_dict[2]))
-        ll.log("t0: " + str(daqc_dict[0]))
-        ll.log("t1: " + str(daqc_dict[1]))
-        ll.log("t2: " + str(daqc_dict[2]))
+    id = 0
+    keep_going = True
+    while keep_going:
+        c = scr.getch()
+        if escapekey:
+            c = 27
+            escapekey = False
+        if c != curses.ERR:
+            if chr(c) == 'q':
+                keep_going = False
+                e.set()
+                break
+        if update_events[0].is_set():
+            ll.log("sprinklerThread update event")
+            update_events[0].clear()
+        if update_events[1].is_set(): 
+            ll.log("thread update event")
+            update_events[1].clear()
+        headder_win.addstr(0, 0, str(id), curses.A_UNDERLINE)
+        headder_win.addstr(1, 1, str(id), curses.A_UNDERLINE)
+        headder_win.addstr(2, 2, str(id), curses.A_BOLD)
+        headder_win.addstr(3, 3, str(id), curses.A_DIM)
+        headder_win.addstr(4, 4, str(id), curses.A_STANDOUT)
 
+        body_win.addstr(0, 0, str(id), curses.A_UNDERLINE)
+        body_win.addstr(19, 0, str(id), curses.A_UNDERLINE)
+
+
+        foot_win.addstr(0, 0, str(id), curses.A_UNDERLINE)
+        foot_win.addstr(1, 1, str(id), curses.A_UNDERLINE)
+        foot_win.addstr(2, 2, str(id), curses.A_BOLD)
+        foot_win.addstr(3, 3, str(id), curses.A_DIM)
+        foot_win.addstr(4, 4, str(id), curses.A_STANDOUT)
+        id += 1
+        headder_win.refresh()
+        body_win.refresh()
+        foot_win.refresh()
         scr.refresh()
-        ct += 1
-
-    e.set()
-
+        time.sleep(0.1)
+        
     # Wait for all threads to complete
     for t in threads:
         t.join()
 
     scr.refresh()
-
-    #curses.endwin()
 
 # def main
 
