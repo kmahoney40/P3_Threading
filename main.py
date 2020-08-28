@@ -1,42 +1,14 @@
 import threading
 import time
 import curses
+import sprinklerThread
+import tempThread
+import logger
+from ad_board import ADBoard
 
 # These will become JSON
 sprinkler_dict = [1,2,3]
-daqc_dict = [0] 
-
-# This calss will read/write all the commands to run the sprinklers. At this point a single
-# relay-plate. The shared innput dictioary can be expanded to include weahter data that may be used
-# to dynamically modife runtimes.
-class sprinklerThread(threading.Thread):
-    def __init__(self, threadID, name, counter, in_dict):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.in_dict = in_dict
-
-    def run(self):
-        #print("Starting " + self.name)
-        while 1:
-            self.in_dict[0] += 1
-            time.sleep(1)
-
-# The daqcThread calss will read/write the daqc-plate and a relay-plate to monitor temps in and
-# outside of the garage and control an exhaust fan.
-class daqcThread(threading.Thread):
-    def __init__(self, threadID, name, counter, in_dict):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.in_dict = in_dict
-
-    def run(self):
-        #print("Starting " + self.name)
-        while 1:            
-            self.in_dict[0] += 1
-            time.sleep(5)
-
+daqc_dict = [0,0,0,0,0,0,0,0] 
 
 def main(scr):
 
@@ -46,13 +18,35 @@ def main(scr):
     scr.keypad(1)
     scr.nodelay(1)
 
+    headder_begin_x = 0; headder_begin_y = 0
+    headder_height = 5; headder_width = 80
+
+    body_begin_x = headder_begin_x; body_begin_y = headder_begin_y + headder_height
+    body_height = 20; body_width = headder_width
+
+    foot_begin_x = body_begin_x; foot_begin_y = body_begin_y + body_height
+    foot_height = 5; foot_width = headder_width
+
+    headder_win = curses.newwin(headder_height, headder_width, headder_begin_y, headder_begin_x)
+    headder_win.border()
+    
+    body_win = curses.newwin(body_height, body_width, body_begin_y, body_begin_x)
+    body_win.border()
+
+    foot_win = curses.newwin(foot_height, foot_width, foot_begin_y, foot_begin_x)
+    foot_win.border()
+
+    e = threading.Event()
+    update_events = [threading.Event(), threading.Event()]
+    escapekey = False
     threads = []
+    ll = logger.logger("main")
 
     # Create new threads
-    thread1 = sprinklerThread(1, "sprinklerThread", 0, sprinkler_dict)
-    thread2 = daqcThread(2, "daqcThread", 0, daqc_dict)
-    #thread3 = uiThread(3, "uiThread", 0, sprinkler_dict, daqc_dict, scr)
+    thread1 = sprinklerThread.sprinklerThread(1, "sprinklerThread", sprinkler_dict, e, update_events[0])
+    thread2 = tempThread.daqcThread(2, "daqcThread", daqc_dict, e, update_events[1])
 
+    
     # Start new Threads
     thread1.start()
     thread2.start()
@@ -60,28 +54,60 @@ def main(scr):
     # Add threads to thread list
     threads.append(thread1)
     threads.append(thread2)
-    
-    print("After threads.append")
+   
+    id = 0
+    keep_going = True
+    while keep_going:
+        c = scr.getch()
+        if escapekey:
+            c = 27
+            escapekey = False
+        if c != curses.ERR:
+            if chr(c) == 'q':
+                keep_going = False
+                e.set()
+                break
+        if update_events[0].is_set():
+            ll.log("sprinklerThread update event")
+            update_events[0].clear()
+        if update_events[1].is_set(): 
+            ll.log("thread update event")
+            update_events[1].clear()
+        headder_win.addstr(0, 0, str(id), curses.A_UNDERLINE)
+        headder_win.addstr(1, 1, str(id), curses.A_UNDERLINE)
+        headder_win.addstr(2, 2, str(id), curses.A_BOLD)
+        headder_win.addstr(3, 3, str(id), curses.A_DIM)
+        headder_win.addstr(4, 4, str(id), curses.A_STANDOUT)
 
-    ct = 0
-    while ct < 10:
-        scr.addstr(5,5,"Woot: " + str(ct))
-        time.sleep(1)
-        scr.addstr(6,5, "sprinkler: " + str(sprinkler_dict[0]))
-        scr.addstr(7,5, "daqc: " + str(daqc_dict[0]))
+        body_win.addstr(0, 0, str(id), curses.A_UNDERLINE)
+        body_win.addstr(19, 0, str(id), curses.A_UNDERLINE)
+
+
+        foot_win.addstr(0, 0, str(id), curses.A_UNDERLINE)
+        foot_win.addstr(1, 1, str(id), curses.A_UNDERLINE)
+        foot_win.addstr(2, 2, str(id), curses.A_BOLD)
+        foot_win.addstr(3, 3, str(id), curses.A_DIM)
+        foot_win.addstr(4, 4, str(id), curses.A_STANDOUT)
+        id += 1
+        headder_win.refresh()
+        body_win.refresh()
+        foot_win.refresh()
         scr.refresh()
-        ct += 1
-
+        time.sleep(0.1)
+        
     # Wait for all threads to complete
     for t in threads:
         t.join()
-    print ("Exiting Main Thread")
 
     scr.refresh()
 
-    curses.endwin()
+# def main
 
 if __name__ == '__main__':
-       
-    curses.wrapper(main)
-        
+    try:
+        curses.wrapper(main)
+    finally:
+        curses.endwin()
+# if __name__
+
+
