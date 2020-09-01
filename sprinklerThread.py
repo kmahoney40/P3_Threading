@@ -17,14 +17,11 @@ class sprinklerThread(threading.Thread):
         self.name = name
         self.ll = logger.logger("sprinklerThread __int__ called")
         self.in_dict = in_dict
-        self.wait_time = 1#cfgObj.wait_time
         self.event = event
         self.update_event = update_event
-        self.relay_board = RelayBoard(0, event)
-        self.rt = [0, 2, 0, 2, 0, 5, 2, 0]
-        self.rtt = [0, 2, 2, 4, 4, 9, 11, 11]
-        self.rts = [0, 120, 120, 360, 360, 660, 780, 780]
-        #self.rts = list(map(lambda x:self.start_time+x, self.rts))
+        self.relay_board = RelayBoard(1, event)
+        self.pid = self.in_dict['conf']['pid']
+
         # The days of the week Mon = 0, Tue = 1...
         self.day = datetime.today().weekday()
         
@@ -32,49 +29,52 @@ class sprinklerThread(threading.Thread):
         confFile = open("irrigation.conf", "r")
         confData = confFile.read()
         confJson = json.loads(confData)
-        self.run_times = confJson["runTimes"]
-        self.ll.log("confJson.[startTime]: " + str(confJson["startTime"]))
-        self.ll.log("run_times: " + str(self.run_times[0]))
+        self.run_times = confJson["run_times"]
+        self.run_today = self.run_times[self.day]
+        self.ll.log("confJson.[start_time]: " + str(confJson["start_time"]))
+        self.ll.log("run_today: " + str(self.run_today))
         
-        self.start_time = confJson["startTime"]# * 60 * 60
+        self.start_time = confJson["start_time"]# * 60 * 60
         hours = self.start_time // 100
         min = self.start_time - (hours * 100)
         self.start_time = 60 * (hours * 60 + min)
-        self.ll.log("confJson.[startTime]: " + str(self.start_time))
+        self.ll.log("confJson.[start_time]: " + str(self.start_time))
         
-        for d in range(7):
-            for v in range(1,8):
-                self.run_times[d][v] += self.run_times[d][v-1]
-
-            self.ll.log("BEFORE run_times[d]: " + str(self.run_times[d]))
-            self.run_times[d] = list(map(lambda x:((x*60)+self.start_time), self.run_times[d]))
-            self.ll.log("AFTER  run_times[d]: " + str(self.run_times[d]))
+        for v in range(1,8):
+            self.run_today[v] += self.run_today[v-1]
+        self.ll.log("SUM run_today: " + str(self.run_today))
+        
+        for v in range(8):
+            self.ll.log("BEFORE run_today[v]: " + str(self.run_today[v]))
+            # use a map here (lambda)
+            self.run_today[v] = (self.run_today[v] * 60) + self.start_time
+            self.ll.log("AFTER  run_today[v]: " + str(self.run_today[v]))
         
         
     # __init__
     
     def run(cls):
         while not cls.event.is_set():
-            cls.in_dict[0] += 1
-            idx = cls.in_dict[0]
-            
-            from_mid = datetime.now()
             now = datetime.now()
             now_in_sec = (now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds()
             cls.ll.log("now_in_sec: " + str(now_in_sec))
             cls.day = datetime.today().weekday()
             cls.ll.log("day: " + str(cls.day))
-            cls.ll.log("cls.run_times[cls.day][0] " + str(cls.run_times[cls.day][0]))
-            cls.ll.log("cls.run_times[cls.day][7] " + str(cls.run_times[cls.day][7]))
+            cls.ll.log("cls.run_today[0] " + str(cls.run_today[0]))
+            cls.ll.log("cls.run_today[7] " + str(cls.run_today[7]))
 
-            if cls.run_times[cls.day][0] < now_in_sec < cls.run_times[cls.day][7]:
+            cls.in_dict['valve_status'] = 0
+            if cls.run_today[0] < now_in_sec < cls.run_today[7]:
                 for v in range(7):
-                    if cls.run_times[cls.day][v] < now_in_sec < cls.run_times[cls.day][v+1]:
+                    if cls.run_today[v] < now_in_sec < cls.run_today[v+1]:
                         cls.ll.log("valve " + str(v) + " = ON")
-                        sec_remaining = cls.run_times[cls.day][v+1] - now_in_sec
+                        cls.in_dict['valve_status'] += 2**v
+                        sec_remaining = cls.run_today[v+1] - now_in_sec
+                        # call relayALL(csl.in_dict[0])
                         cls.ll.log("sec_remaining " + str(sec_remaining)  + " - " + str(sec_remaining/60)+ "in 7 bit: " + str(2**v))
+                        cls.ll.log("SPRINKLER DICT[0]: " + str(cls.in_dict['valve_status']))
+            cls.ll.log("SPRINKLER DICT[0]: " + str(cls.in_dict['valve_status']))
 
-            cls.relay_board.toggle_led(0)
             cls.update_event.set()
             cls.event.wait(timeout=5)
     # run

@@ -15,13 +15,15 @@ class logger:
         if new_day != cls.today:
             cls.today = new_day
             log_file = cls.file_name + "_" + str(cls.today) + ".log"
-            loggind.basicConfig(filename=log_file)
+            logging.basicConfig(filename=log_file)
         if lvl.lower() == "i":
             logging.info(dtnow + msg)
-        if lvl.lower() == "d":
-            logging.info(dtnow + msg)
         if lvl.lower() == "w":
-            logging.info(dtnow + msg)
+            logging.warning(dtnow + msg)
+        if lvl.lower() == "e":
+            logging.error(dtnow + msg)
+        if lvl.lower() == "d":
+            logging.debug(dtnow + msg)
 
     # def log()
 # class Logger

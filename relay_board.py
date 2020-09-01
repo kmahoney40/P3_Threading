@@ -22,7 +22,7 @@ class RelayBoard(RelayPlate):
         cls.ll.log("relay_toggle: " + str(rid))
 
     def set_led(cls):
-        RelayPlate.set_led(0)
+        RelayPlate.set_led(self.pid)
 
     def clr_led(cls):
-        RelayPlate.clr_led(0)
+        RelayPlate.clr_led(self.pid)
