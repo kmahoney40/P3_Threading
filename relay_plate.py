@@ -7,6 +7,8 @@ class RelayPlate:
     def __init__(self, pid, cfg_obj):
         try:
             self.pid = pid
+            self.ll = logger.logger("RelayPlate")
+            self.ll.log("RealyPlate __init__ self.pid = " +  str(self.pid))
         except:
             sys.exit("Error in RelayPlate: " + sys.exc_info()[0])
     # __init__
@@ -19,15 +21,16 @@ class RelayPlate:
     # set_relay
 
     def relay_on(cls, rid):
-        RELAY.relayON(0, rid)
+        RELAY.relayON(cls.pid, rid)
     # relay_on
 
     def relay_off(cls, rid):
-        RELAY.relayOFF(0, rid)
+        RELAY.relayOFF(cls.pid, rid)
     # relay_off
 
     def relay_toggle(cls, rid):
-        RELAY.relayTOGGLE(0, rid)
+        cls.ll.log("relay_toggle rid: " + str(rid))
+        RELAY.relayTOGGLE(cls.pid, rid)
     # relay_toggle
 
     # Set all the relays in 1 command. val is a 7 bit number
