@@ -10,11 +10,11 @@ import logger
 
 # These will become JSON
 #water_dict = [0, {"start_time": 600}]
-water_dict = { "valve_status": 0, "conf": {} }
+water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "conf": {} }
 daqc_dict = [0,0,0,0,0,0,0,0]
 days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
-man_run = False
+#man_run = False
 
 def display_head(win, logger, mode):
     try:
@@ -47,13 +47,18 @@ def display_body(win, logger):
             
         if mode[0] == "Water/Manual":
             win.addstr(8, 0, "Up: 'a' 's' 'd' 'f' 'g' 'h' 'j'")
-            #for v in range(len(man_times)):
-            for v in range(len(water_dict['conf']['man_times'])):
-                win.addstr(9, 3 + v*4, str(water_dict['conf']['man_times'][v]).rjust(3)) 
+            # man_times length is 8, extra is used in calculations in WaterThread
+            for v in range(1,len(water_dict['conf']['man_times'])):
+                win.addstr(9, 3 + (v-1)*4, str(water_dict['conf']['man_times'][v]).rjust(3)) 
             win.addstr(10, 0, "Dn: 'z' 'x' 'c' 'v' 'b' 'n' 'm'")
-            #win.addstr(28, 0, "runManMode: " + str(runManMode) + "  ")
-            
-            
+        else:
+            win.move(8,0)
+            win.clrtoeol()
+            win.move(9,0)
+            win.clrtoeol()
+            win.move(10,0)
+            win.clrtoeol()
+
     except:
         logger.log("Error in display_body: " + str(sys.exc_info()[0]))
 # display_body
@@ -76,14 +81,16 @@ def adj_man_time(inCh, logger):
     lst = ['a','s','d','f','g','h','j','A','S','D','F','G','H','J','z','x','c','v','b','n','m','Z','X','C','V','B','N','M']
     if inCh == 'r':
         man = True
+        water_dict["man_run"] = 1
     elif inCh in lst:
+        # idx is for a list and we want to skip the 1st element
         idx = lst.index(inCh)
         if inCh.isupper():
             dt = 5
         if idx > 13:
             dt *= -1
         logger.log("adj_man_times idx and delta: " + str(idx) + " : " + str(dt) + " ; " + str(idx), "d")
-        idx = idx % 7
+        idx = (idx % 7) + 1
     retVal = (idx,dt,man)
     return retVal
 # adj_man_time
@@ -101,6 +108,8 @@ def read_keyboard(screen, event_quit, mode, logger):
             ret_val = False
         if chr(c) == 'w':
             mode[0] = "Water"
+            water_dict["man_mode"] = 0
+            water_dict["man_run"] = 0
             logger.log("w pressed: mode = " + str(mode))
         if chr(c) == 't':
             mode[0] = "Temp"
@@ -108,10 +117,13 @@ def read_keyboard(screen, event_quit, mode, logger):
         if chr(c) == 'm':
             if mode[0] == "Water":
                 mode[0] = "Water/Manual"
+                water_dict["man_mode"] = 1
                 logger.log("m pressed: mode = " + str(mode))
-            elif mode[0] == "Water/Manual":
+        if c is 27:
+            if mode[0] == "Water/Manual":
                 mode[0] = "Water"
                 logger.log("m pressed: mode = " + str(mode))
+            
         if mode[0] == "Water/Manual":
             idx,delta,man_run = adj_man_time(chr(c), logger)
             logger.log("idx,delta = " + str(idx) + "," + str(delta) + "," + str(man_run), "d")
@@ -166,12 +178,12 @@ def main(scr):
 
 
     # todo Use Dictionary quit:, t1: or water_event, t2 or temp_event
-    e = threading.Event()
+    event_quit = threading.Event()
     update_events = [threading.Event(), threading.Event()]
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", water_dict, e, update_events[0])
-    thread2 = tempThread.daqcThread(2, "daqcThread", daqc_dict, e, update_events[1])
+    thread1 = WaterThread.WaterThread(1, "WaterThread", water_dict, event_quit, update_events[0])
+    thread2 = tempThread.daqcThread(2, "daqcThread", daqc_dict, event_quit, update_events[1])
     
     # Start new Threads
     thread1.start()
@@ -186,7 +198,7 @@ def main(scr):
     keep_going = True
     while keep_going:
         # Returns False if 'q' is pressed
-        if not read_keyboard(scr, e, mode, ll):
+        if not read_keyboard(scr, event_quit, mode, ll):
             break
         #ll.log("mode = " + mode[0])
 #        c = scr.getch()
