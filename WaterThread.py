@@ -30,6 +30,7 @@ class WaterThread(threading.Thread):
         #self.ll.log("confJson: " + str(confJson))
         self.man_mode = in_dict["man_mode"]
         self.man_times = in_dict["conf"]["man_times"]
+        #self.man_run = in_dict["man_run"]
         self.run_times = in_dict["conf"]["run_times"]
         self.run_today = self.run_times[self.day].copy()
         self.ll.log("in_dict.[start_time]: " + str(in_dict["conf"]["start_time"]))
@@ -42,7 +43,6 @@ class WaterThread(threading.Thread):
         self.start_time = 60 * (hours * 60 + min)
         self.ll.log("confJson.[start_time]: " + str(self.start_time))
 
-        
         #for v in range(1,8):
         #    self.run_today[v] += self.run_today[v-1]
         #self.ll.log("SUM run_today: " + str(self.run_today))
@@ -65,37 +65,48 @@ class WaterThread(threading.Thread):
         cls.ll.log("man_times[]: " + str(cls.man_times), "d")
         cls.ll.log("in_dict[man_mode]: " + str(cls.in_dict["man_mode"]),"d")
 
+        cls.ll.log("in_dict[man_run]: " + str(cls.in_dict["man_run"]), "d")
+
         if cls.in_dict["man_mode"] is 0:
+            today_times = cls.run_times[cls.day].copy()
             cls.run_today = cls.run_times[cls.day].copy()
-            cls.run_today = list(map(lambda v: v * 60, cls.run_times[cls.day].copy()))
+            
+            cls.ll.log("0 STANDARD set_run_today cls.run_today: " + str(cls.run_today))
+            for v in range(1,8):
+                cls.run_today[v] = cls.run_today[v-1] + today_times[v]
+            cls.ll.log("1 STANDARD set_run_today cls.run_today: " + str(cls.run_today))
+
+            cls.run_today = list(map(lambda v: v * 60, cls.run_today))
             cls.ll.log("cls.run_today: " + str(cls.run_today),"d")
             # cls.start_time is in seconds
             start_tm = cls.start_time
         else:
-            cls.run_today = cls.man_times.copy()
-            start_tm = now_in_sec
-            #now_in_sec *= 1
-            cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
-            for c in range(8):
-                cls.ll.log("0 MANUAL set_run_today cls.man_times[c]: " + str(cls.man_times[c]))
-                cls.ll.log("0 MANUAL in sec: " + str(cls.man_times[c] * 60.0))
-                vv = ((cls.man_times[c] * 60.0) + int(now_in_sec))
-                cls.ll.log("0 MANUAL in sec = now_in_sec vv: " + str(vv))
-                cls.ll.log("0 MANUAL in sec = now_in_sec: " + str((cls.man_times[c] * 60) + now_in_sec))
+            cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            if not cls.in_dict["man_run"] == 1:
+                cls.run_today = cls.man_times.copy()
+                start_tm = now_in_sec
+                #now_in_sec *= 1
+                cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+                
+                # do the run min in sec then add in the start time to every element (lambda baby!)
+                cls.ll.log("1.5 MANUAL set_run_today cls.run_today: " + str(cls.man_times))
+                for v in range(1,8):
+                    cls.run_today[v] = cls.run_today[v-1] + cls.man_times[v]
+                cls.ll.log("1.6 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
 
-            #cls.run_today = list(map((cls.mf) + now_in_sec), cls.man_times)
-            for v in range(8):
-                val = 0
-                if cls.man_times[v] != 0:
-                    val = (cls.man_times[v] * 60.0) + now_in_sec
-                cls.run_today[v] = val
+                cls.run_today = list(map(lambda v: v * 60, cls.run_today.copy()))
 
-            cls.ll.log("2 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
-            cls.start_time = now_in_sec
-            cls.man_mode = 2
+                cls.ll.log("2 MANUAL now_in_sec: " + str(now_in_sec))
+                cls.ll.log("2 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
 
-        for v in range(1,8):
-            cls.run_today[v] += cls.run_today[v-1]
+                cls.start_time = now_in_sec
+                cls.in_dict["man_run"] = 0
+                cls.man_mode = 2
+        cls.ll.log("0 start_tm: " + str(start_tm))
+        temp_list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        for v in range(8):
+            temp_list[v] = cls.run_today[v] + start_tm
+        cls.run_today = temp_list.copy()
         cls.ll.log("SUM run_today: " + str(cls.run_today))
     # set_run_today
 
@@ -121,10 +132,12 @@ class WaterThread(threading.Thread):
             #if cls.day != cls.previous_day or cls.in_dict["man_mode"] is 1:
             cls.set_run_today(now_in_sec)
             #if cls.in_dict["man_run"] is 1:
-            cls.ll.log("AFTER ***cls.run_today[] " + str(cls.run_today), "d")
+            cls.ll.log("run() AFTER ***cls.run_today[] " + str(cls.run_today), "d")
 
             cls.in_dict['valve_status'] = 0
+            cls.ll.log("cls.run_today[0]: " + str(cls.run_today[0]) + " now_in_sec: " + str(now_in_sec) + " cls.run_today[7]: " + str(cls.run_today[7]), "d")
             if cls.run_today[0] < now_in_sec < cls.run_today[7]:
+                cls.ll.log("cls.run_today[0] < now_in_sec < cls.run_today[7]", "d")
                 for v in range(7):
                     if cls.run_today[v] < now_in_sec < cls.run_today[v+1]:
                         cls.ll.log("valve " + str(v) + " = ON")
@@ -132,11 +145,15 @@ class WaterThread(threading.Thread):
                         sec_remaining = cls.run_today[v+1] - now_in_sec
                         #time_remaining = str(datetime.timedelta(sec_remaining)) 
                         # call relayALL(csl.in_dict[0])
-                        cls.ll.log("sec_remaining " + str(sec_remaining)  + " - " + str(sec_remaining/60)+ "in 7 bit: " + str(2**v))
+                        cls.ll.log("sec_remaining " + str(sec_remaining)  + " - " + str(sec_remaining/60)+ " in 7 bit: " + str(2**v))
+                        relay = 2**v
+                        #cls.relay_board.relay_on(v+1)
+                        cls.relay_board.set_all_relays(relay)
                         #cls.ll.log("time_remaining " + time_remaining)
                         cls.ll.log("SPRINKLER DICT[0]: " + str(cls.in_dict['valve_status']))
                     else:
-                        cls.relay_board.set_all_relays(0)
+                        cls.ll.log("CLEAR ALL RELAYS: " + str(v))
+                        #cls.relay_board.set_all_relays(0)
             cls.ll.log("SPRINKLER DICT[0]: " + str(cls.in_dict['valve_status']))
 
             """

@@ -109,7 +109,7 @@ def read_keyboard(screen, event_quit, mode, logger):
         if chr(c) == 'w':
             mode[0] = "Water"
             water_dict["man_mode"] = 0
-            water_dict["man_run"] = 0
+            #water_dict["man_run"] = 0
             logger.log("w pressed: mode = " + str(mode))
         if chr(c) == 't':
             mode[0] = "Temp"
