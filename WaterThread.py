@@ -101,7 +101,6 @@ class WaterThread(threading.Thread):
 
                 cls.start_time = now_in_sec
                 cls.in_dict["man_run"] = 0
-                cls.man_mode = 2
         cls.ll.log("0 start_tm: " + str(start_tm))
         temp_list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         for v in range(8):
@@ -145,7 +144,19 @@ class WaterThread(threading.Thread):
                         sec_remaining = cls.run_today[v+1] - now_in_sec
                         #time_remaining = str(datetime.timedelta(sec_remaining)) 
                         # call relayALL(csl.in_dict[0])
+                        sec = sec_remaining % 60
+
+                        remaining_sec = sec_remaining % 60
+                        remaining_min = int((sec_remaining - sec) / 60)
+                        time_remaining_str = str(remaining_min).zfill(2) + ":" + str(remaining_sec).zfill(2)
+                        cls.in_dict["time_remaining"] = time_remaining_str
+                        cls.ll.log("time_remaining str: " + time_remaining_str)
+                        cls.ll.log("sec: " + str(sec))
+                        minn = int((sec_remaining - sec) / 60)
                         cls.ll.log("sec_remaining " + str(sec_remaining)  + " - " + str(sec_remaining/60)+ " in 7 bit: " + str(2**v))
+                        time_remaining = datetime.fromtimestamp(sec_remaining)
+                        cls.ll.log("time remianing: " + str(time_remaining))
+                        cls.ll.log("time remaining min sec: " + str(minn) + ":" + str(sec).zfill(2))
                         relay = 2**v
                         #cls.relay_board.relay_on(v+1)
                         cls.relay_board.set_all_relays(relay)
@@ -156,57 +167,6 @@ class WaterThread(threading.Thread):
                         #cls.relay_board.set_all_relays(0)
             cls.ll.log("SPRINKLER DICT[0]: " + str(cls.in_dict['valve_status']))
 
-            """
-            if cls.ct == 1:
-                cls.ll.log("BEFORE relay_on")
-                #cls.relay_board.relay_on(1)
-                cls.relay_board.set_all_relays(1)
-                #cls.relay_board.relay_toggle(1)
-                cls.relay_board.led_toggle()
-                cls.ll.log("AFTER relay_on")
-            if cls.ct == 2:
-                cls.ll.log("2-BEFORE relay_onf")
-                #cls.relay_board.relay_off(2)
-                cls.relay_board.set_all_relays(1)
-                cls.relay_board.led_toggle()
-                cls.ll.log("2-AFTER relay_off")
-            if cls.ct == 3:
-                cls.ll.log("2-BEFORE relay_onf")
-                #cls.relay_board.relay_off(3)
-                cls.relay_board.set_all_relays(4)
-                cls.relay_board.led_toggle()
-                cls.ll.log("2-AFTER relay_off")
-            if cls.ct == 4:
-                cls.ll.log("2-BEFORE relay_onf")
-                #cls.relay_board.relay_off(4)
-                cls.relay_board.set_all_relays(8)
-                cls.relay_board.led_toggle()
-                cls.ll.log("2-AFTER relay_off")
-            if cls.ct == 5:
-                cls.ll.log("2-BEFORE relay_onf")
-                #cls.relay_board.relay_off(5)
-                cls.relay_board.set_all_relays(16)
-                cls.relay_board.led_toggle()
-                cls.ll.log("2-AFTER relay_off")
-            if cls.ct == 6:
-                cls.ll.log("2-BEFORE relay_onf")
-                #cls.relay_board.relay_off(6)
-                cls.relay_board.set_all_relays(32)
-                cls.relay_board.led_toggle()
-                cls.ll.log("2-AFTER relay_off")
-            if cls.ct == 7:
-                cls.ll.log("2-BEFORE relay_onf")
-                #cls.relay_board.relay_off(7)
-                cls.relay_board.set_all_relays(64)
-                cls.relay_board.led_toggle()
-                cls.ll.log("2-AFTER relay_off")
-            """
-            """
-            if cls.ct > 0:
-                mask = 1 << cls.ct - 1
-                v = state & mask
-                cls.ll.log("mask: " + str(mask) + " v: " + str(v))
-            """
             cls.update_event.set()
             cls.event.wait(timeout=5)
     # run

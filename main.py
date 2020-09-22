@@ -10,7 +10,7 @@ import logger
 
 # These will become JSON
 #water_dict = [0, {"start_time": 600}]
-water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "conf": {} }
+water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
 daqc_dict = [0,0,0,0,0,0,0,0]
 days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
@@ -37,8 +37,8 @@ def display_body(win, logger):
             state = water_dict["valve_status"] & mask
             on_off = "OFF"
             if state:
-                on_off = "ON"
-            win.addstr(0 + valve, 0, "Valve " + str(valve) + " state: " + on_off)
+                on_off = "ON  Reamaining: " + water_dict["time_remaining"]
+            win.addstr(0 + valve, 0, "Valve " + str(valve+1) + " state: " + on_off)
             win.clrtoeol()
 
         for run in range(num_runs):
@@ -58,7 +58,6 @@ def display_body(win, logger):
             win.clrtoeol()
             win.move(10,0)
             win.clrtoeol()
-
     except:
         logger.log("Error in display_body: " + str(sys.exc_info()[0]))
 # display_body
@@ -68,7 +67,7 @@ def display_foot(win, logger):
         win.addstr(0, 0, str(7), curses.A_UNDERLINE)
         win.addstr(1, 1, str(8), curses.A_UNDERLINE)
     except:
-        logger.log("Error in display_body: " + str(sys.exc_info()[0]))
+        logger.log("Error in display_foot: " + str(sys.exc_info()[0]))
 # display_foot
 
 def adj_man_time(inCh, logger):
@@ -79,10 +78,7 @@ def adj_man_time(inCh, logger):
     retVal = (0,0,man)
 
     lst = ['a','s','d','f','g','h','j','A','S','D','F','G','H','J','z','x','c','v','b','n','m','Z','X','C','V','B','N','M']
-    if inCh == 'r':
-        man = True
-        water_dict["man_run"] = 1
-    elif inCh in lst:
+    if inCh in lst:
         # idx is for a list and we want to skip the 1st element
         idx = lst.index(inCh)
         if inCh.isupper():
@@ -125,6 +121,10 @@ def read_keyboard(screen, event_quit, mode, logger):
                 logger.log("m pressed: mode = " + str(mode))
             
         if mode[0] == "Water/Manual":
+            logger.log("man_mode = " + str(water_dict["man_mode"]))
+            if chr(c) == 'r' and water_dict["man_mode"] is 1:
+                water_dict["man_run"] = 1
+
             idx,delta,man_run = adj_man_time(chr(c), logger)
             logger.log("idx,delta = " + str(idx) + "," + str(delta) + "," + str(man_run), "d")
             water_dict['conf']['man_times'][idx] += delta
