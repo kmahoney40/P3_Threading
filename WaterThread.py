@@ -82,12 +82,12 @@ class WaterThread(threading.Thread):
             start_tm = cls.start_time
         else:
             cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
-            if not cls.in_dict["man_run"] == 1:
+            if cls.in_dict["man_run"] is not 1:
                 cls.run_today = cls.man_times.copy()
                 start_tm = now_in_sec
                 #now_in_sec *= 1
                 cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
-                
+
                 # do the run min in sec then add in the start time to every element (lambda baby!)
                 cls.ll.log("1.5 MANUAL set_run_today cls.run_today: " + str(cls.man_times))
                 for v in range(1,8):

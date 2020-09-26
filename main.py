@@ -15,6 +15,7 @@ daqc_dict = [0,0,0,0,0,0,0,0]
 days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
 #man_run = False
+run_times = ["", "", "", "", "", "", ""]
 
 def display_head(win, logger, mode):
     try:
@@ -42,7 +43,7 @@ def display_body(win, logger):
             win.clrtoeol()
 
         for run in range(num_runs):
-            win.addstr(0 + run, 43, days[run] + str(water_dict["conf"]["run_times"][run]))
+            win.addstr(0 + run, 43, days[run] + str(water_dict["conf"]["run_times"][run]).rjust(3))
             win.clrtoeol()
             
         if mode[0] == "Water/Manual":
@@ -141,6 +142,7 @@ def main(scr):
     scr = curses.initscr()
     curses.cbreak()
     curses.noecho()
+    
     scr.keypad(1)
     scr.nodelay(1)
 
@@ -175,6 +177,13 @@ def main(scr):
     ll.log("setup - water_dict['conf']: " + str(water_dict['conf']))
     ll.log("setup - water_dict['conf']['start_time']: " + str(water_dict['conf']['start_time']))
     ll.log("setup - water_dict['conf']['pid']: " + str(water_dict['conf']['pid']))
+
+    rt = ["","","","","","","",""]
+    for d in range(7):
+        run_times[d] = str(water_dict["conf"]["run_times"][d])
+        for t in range(7):
+            rt[d] += str(water_dict["conf"]["run_times"][d][t])
+        ll.log("setup - run_times[]: " + rt[d])
 
 
     # todo Use Dictionary quit:, t1: or water_event, t2 or temp_event
