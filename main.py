@@ -16,6 +16,7 @@ days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
 #man_run = False
 run_times = ["", "", "", "", "", "", ""]
+disp_run_times = []
 
 def display_head(win, logger, mode):
     try:
@@ -43,7 +44,8 @@ def display_body(win, logger):
             win.clrtoeol()
 
         for run in range(num_runs):
-            win.addstr(0 + run, 43, days[run] + str(water_dict["conf"]["run_times"][run]).rjust(3))
+            # Packing a lot into one line, love slice.
+            win.addstr(0 + run, 43, days[run] + str((water_dict["conf"]["run_times"][run])[1:]))
             win.clrtoeol()
             
         if mode[0] == "Water/Manual":
@@ -78,8 +80,11 @@ def adj_man_time(inCh, logger):
     man = False
     retVal = (0,0,man)
 
+    logger.log("OUTSIDE adj_man_times inCh: " + str(inCh), "d")
+
     lst = ['a','s','d','f','g','h','j','A','S','D','F','G','H','J','z','x','c','v','b','n','m','Z','X','C','V','B','N','M']
     if inCh in lst:
+        logger.log("INSIDE adj_man_times inCh: " + str(inCh), "d")
         # idx is for a list and we want to skip the 1st element
         idx = lst.index(inCh)
         if inCh.isupper():
@@ -88,7 +93,8 @@ def adj_man_time(inCh, logger):
             dt *= -1
         logger.log("adj_man_times idx and delta: " + str(idx) + " : " + str(dt) + " ; " + str(idx), "d")
         idx = (idx % 7) + 1
-    retVal = (idx,dt,man)
+        logger.log("adj_man_times idx post % 7: " + str(idx))
+        retVal = (idx,dt,man)
     return retVal
 # adj_man_time
 
@@ -129,11 +135,17 @@ def read_keyboard(screen, event_quit, mode, logger):
             idx,delta,man_run = adj_man_time(chr(c), logger)
             logger.log("idx,delta = " + str(idx) + "," + str(delta) + "," + str(man_run), "d")
             water_dict['conf']['man_times'][idx] += delta
-            if water_dict['conf']['man_times'][idx] > 99:
-                water_dict['conf']['man_times'][idx] = 99
-            if water_dict['conf']['man_times'][idx] < 0:
-                water_dict['conf']['man_times'][idx] = 0
-                
+            # Is there a python int.limit(0,99) ??
+            
+            logger.log("water_dict[conf][man_times] " + str(water_dict['conf']['man_times']), "d")
+            water_dict['conf']['man_times'][idx] = max(0, min(water_dict['conf']['man_times'][idx], 99))
+            logger.log("water_dict[conf][man_times][idx] " + str(water_dict['conf']['man_times'][idx]), "d")
+            
+            #if water_dict['conf']['man_times'][idx] > 99:
+            #    water_dict['conf']['man_times'][idx] = 99
+            #if water_dict['conf']['man_times'][idx] < 0:
+            #    water_dict['conf']['man_times'][idx] = 0
+            logger.log("water_dict[conf][man_times] " + str(water_dict['conf']['man_times']), "d")
     return ret_val
 # read_keyboard
 
