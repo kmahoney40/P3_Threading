@@ -5,7 +5,7 @@ import curses
 import sys
 import json
 import WaterThread
-import tempThread
+import TempThread
 import logger
 
 # These will become JSON
@@ -98,7 +98,7 @@ def adj_man_time(inCh, logger):
     return retVal
 # adj_man_time
 
-def read_keyboard(screen, event_quit, mode, logger):
+def read_keyboard(screen, event_quit, event_man_run, mode, logger):
     ret_val = True
     escapekey = False
     c = screen.getch()
@@ -131,6 +131,7 @@ def read_keyboard(screen, event_quit, mode, logger):
             logger.log("man_mode = " + str(water_dict["man_mode"]))
             if chr(c) == 'r' and water_dict["man_mode"] is 1:
                 water_dict["man_run"] = 1
+                event_man_run.set()
 
             idx,delta,man_run = adj_man_time(chr(c), logger)
             logger.log("idx,delta = " + str(idx) + "," + str(delta) + "," + str(man_run), "d")
@@ -196,11 +197,13 @@ def main(scr):
 
     # todo Use Dictionary quit:, t1: or water_event, t2 or temp_event
     event_quit = threading.Event()
-    update_events = [threading.Event(), threading.Event()]
+    event_man_run = threading.Event()
+    water_events = [event_quit, event_man_run]
+    #temp_events = [event_quit, event_temp_update]
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", water_dict, event_quit, update_events[0])
-    thread2 = tempThread.daqcThread(2, "daqcThread", daqc_dict, event_quit, update_events[1])
+    thread1 = WaterThread.WaterThread(1, "WaterThread", water_dict, event_quit, event_man_run)
+    thread2 = TempThread.daqcThread(2, "daqcThread", daqc_dict, event_quit)
     
     # Start new Threads
     thread1.start()
@@ -215,16 +218,8 @@ def main(scr):
     keep_going = True
     while keep_going:
         # Returns False if 'q' is pressed
-        if not read_keyboard(scr, event_quit, mode, ll):
+        if not read_keyboard(scr, event_quit, event_man_run, mode, ll):
             break
-
-        if update_events[0].is_set():
-            ll.log("WaterThread update event")
-            ll.log("WaterThread status/state: " + str(water_dict["valve_status"]))
-            update_events[0].clear()
-        if update_events[1].is_set(): 
-            ll.log("thread update event")
-            update_events[1].clear()
 
         display_head(headder_win, ll, mode[0])
         display_body(body_win, ll)
