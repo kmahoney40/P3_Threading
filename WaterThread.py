@@ -23,11 +23,6 @@ class WaterThread(threading.Thread):
         # The days of the week Mon = 0, Tue = 1...
         self.previous_day = -1
         self.day = datetime.today().weekday()
-        # Read conf file
-        #confFile = open("irrigation.conf", "r")
-        #confData = confFile.read()
-        #confJson = json.loads(confData)
-        #self.ll.log("confJson: " + str(confJson))
         self.man_mode = in_dict["man_mode"]
         self.man_times = in_dict["conf"]["man_times"]
         #self.man_run = in_dict["man_run"]
@@ -44,25 +39,12 @@ class WaterThread(threading.Thread):
         self.start_time = 60 * (hours * 60 + min)
         self.local_start_time = self.start_time
         self.ll.log("confJson.[start_time]: " + str(self.start_time) + " local_start_time: " + str(self.local_start_time))
-
-        #for v in range(1,8):
-        #    self.run_today[v] += self.run_today[v-1]
-        #self.ll.log("SUM run_today: " + str(self.run_today))
-        
-        #for v in range(8):
-        #    self.ll.log("BEFORE run_today[v]: " + str(self.run_today[v]))
-            # use a map here (lambda)
-        #    self.run_today[v] = (self.run_today[v] * 60) + self.start_time
-        #    self.ll.log("AFTER  run_today[v]: " + str(self.run_today[v]))
-            
         self.relay_board.set_all_relays(0)
     # __init__
 
     def set_run_today(cls, now_in_sec):
-        #start_tm = 0
         # The days of the week Mon = 0, Tue = 1...
         cls.day = datetime.today().weekday()
-        #cls.run_today = cls.run_times[cls.day]
 
         cls.ll.log("man_times[]: " + str(cls.man_times), "d")
         cls.ll.log("in_dict[man_mode]: " + str(cls.in_dict["man_mode"]),"d")
@@ -80,16 +62,12 @@ class WaterThread(threading.Thread):
 
             cls.run_today = list(map(lambda v: v * 60, cls.run_today))
             cls.ll.log("cls.run_today: " + str(cls.run_today),"d")
-            # cls.start_time is in seconds
             cls.local_start_time = now_in_sec - cls.start_time
             cls.start_tm = cls.start_time
         else:
             today_times = (cls.run_times[cls.day])[:]
             cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
-        #if cls.in_dict["man_run"] is not 1:
             cls.run_today = cls.man_times.copy()
-            #start_tm = now_in_sec
-            #now_in_sec *= 1
             cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
 
             # do the run min in sec then add in the start time to every element (lambda baby!)
@@ -106,7 +84,6 @@ class WaterThread(threading.Thread):
             if cls.in_dict["man_run"] is not 1:
                 cls.local_start_time = now_in_sec
                 cls.start_time = now_in_sec
-                #cls.in_dict["man_run"] = 0
                 cls.ll.log("in_dict[man_run] 1: " + str(cls.in_dict["man_run"]), "d")
 
         cls.ll.log("0 start_tm: " + str(cls.start_tm))
