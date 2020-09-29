@@ -43,6 +43,9 @@ pip-delete-this-directory.txt
 # Debug Files
 TouchFile.txt
 
+$ VS Code
+.vscode
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
