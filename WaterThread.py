@@ -108,15 +108,9 @@ class WaterThread(threading.Thread):
                 cls.start_time = now_in_sec
                 #cls.in_dict["man_run"] = 0
                 cls.ll.log("in_dict[man_run] 1: " + str(cls.in_dict["man_run"]), "d")
-            #cls.start_time = now_in_sec
-            #cls.in_dict["man_run"] = 0
-            
 
         cls.ll.log("0 start_tm: " + str(cls.start_tm))
         temp_list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        #for v in range(8):
-        #for v in range(1,8):
-        #    temp_list[v] = cls.run_today[v] + cls.start_tm
         cls.run_today = cls.run_today.copy()#temp_list.copy()
         cls.ll.log("SUM run_today: " + str(cls.run_today))
     # set_run_today
@@ -133,16 +127,9 @@ class WaterThread(threading.Thread):
             cls.ll.log("cls.run_today[0] " + str(cls.run_today[0]))
             cls.ll.log("cls.run_today[7] " + str(cls.run_today[7]))
 
-            cls.ll.log("cls.run_today[7] " + str(cls.run_today[7]), "i")
-            cls.ll.log("cls.run_today[7] " + str(cls.run_today[7]), "w")
-            cls.ll.log("cls.run_today[7] " + str(cls.run_today[7]), "e")
-            cls.ll.log("cls.run_today[7] " + str(cls.run_today[7]), "d")
-
             cls.ll.log("BEFORE *** cls.run_today[] " + str(cls.run_today), "d")
             cls.ll.log("cls.day " + str(cls.day) + " cls.previous_day " + str(cls.previous_day), "d")
-            #if cls.day != cls.previous_day or cls.in_dict["man_mode"] is 1:
             cls.set_run_today(now_in_sec)
-            #if cls.in_dict["man_run"] is 1:
             cls.ll.log("run() AFTER ***cls.run_today[] " + str(cls.run_today), "d")
 
             cls.local_start_time = now_in_sec - cls.start_time
@@ -156,8 +143,6 @@ class WaterThread(threading.Thread):
                         cls.ll.log("valve " + str(v) + " = ON")
                         cls.in_dict['valve_status'] += 2**v
                         sec_remaining = cls.run_today[v+1] - cls.local_start_time# - now_in_sec
-                        #time_remaining = str(datetime.timedelta(sec_remaining)) 
-                        # call relayALL(csl.in_dict[0])
                         sec = sec_remaining % 60
 
                         remaining_sec = sec_remaining % 60
@@ -172,14 +157,11 @@ class WaterThread(threading.Thread):
                         cls.ll.log("time remianing: " + str(time_remaining))
                         cls.ll.log("time remaining min sec: " + str(minn) + ":" + str(sec).zfill(2))
                         relay = 2**v
-                        #cls.relay_board.relay_on(v+1)
                         cls.relay_board.set_all_relays(relay)
-                        #cls.ll.log("time_remaining " + time_remaining)
                         cls.ll.log("SPRINKLER DICT[0]: " + str(cls.in_dict['valve_status']))
                     else:
                         cls.relay_board.set_all_relays(0)
                         cls.ll.log("CLEAR ALL RELAYS: " + str(v))
-                        #cls.relay_board.set_all_relays(0)
             else:
                 cls.in_dict["man_run"] = 0
             cls.ll.log("SPRINKLER DICT[0]: " + str(cls.in_dict['valve_status']))

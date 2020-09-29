@@ -135,17 +135,13 @@ def read_keyboard(screen, event_quit, mode, logger):
             idx,delta,man_run = adj_man_time(chr(c), logger)
             logger.log("idx,delta = " + str(idx) + "," + str(delta) + "," + str(man_run), "d")
             water_dict['conf']['man_times'][idx] += delta
-            # Is there a python int.limit(0,99) ??
-            
-            logger.log("water_dict[conf][man_times] " + str(water_dict['conf']['man_times']), "d")
+            # This is better that the comment block below to keep man_times between 0 and 99 (inclusive)
             water_dict['conf']['man_times'][idx] = max(0, min(water_dict['conf']['man_times'][idx], 99))
-            logger.log("water_dict[conf][man_times][idx] " + str(water_dict['conf']['man_times'][idx]), "d")
             
             #if water_dict['conf']['man_times'][idx] > 99:
             #    water_dict['conf']['man_times'][idx] = 99
             #if water_dict['conf']['man_times'][idx] < 0:
             #    water_dict['conf']['man_times'][idx] = 0
-            logger.log("water_dict[conf][man_times] " + str(water_dict['conf']['man_times']), "d")
     return ret_val
 # read_keyboard
 
@@ -221,16 +217,6 @@ def main(scr):
         # Returns False if 'q' is pressed
         if not read_keyboard(scr, event_quit, mode, ll):
             break
-        #ll.log("mode = " + mode[0])
-#        c = scr.getch()
-#        if escapekey:
-#            c = 27
-#            escapekey = False
-#        if c != curses.ERR:
-#            if chr(c) == 'q':
-#                keep_going = False
-#                e.set()
-#                break
 
         if update_events[0].is_set():
             ll.log("WaterThread update event")
@@ -248,7 +234,6 @@ def main(scr):
         headder_win.refresh()
         body_win.refresh()
         foot_win.refresh()
-        #scr.refresh()
         time.sleep(0.1)
 
     # Wait for all threads to complete
