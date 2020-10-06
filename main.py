@@ -22,7 +22,7 @@ def display_head(win, logger, mode):
     try:
         now = datetime.now()
         now_formated = now.strftime("%m/%d/%Y, %H:%M:%S")#datetime.now()
-        win.addstr(0, 0, "Now: " +  now_formated + "   Mode: " + mode)
+        win.addstr(0, 0, "Now: " +  now_formated + "   Mode: " + mode + " Auto Start Time: " + str(water_dict["conf"]["start_time"]))
         win.clrtoeol()
     except:
         logger.log("Error in display_head: " + str(sys.exc_info()[0]))
@@ -93,7 +93,6 @@ def adj_man_time(inCh, logger):
             dt *= -1
         logger.log("adj_man_times idx and delta: " + str(idx) + " : " + str(dt) + " ; " + str(idx), "d")
         idx = (idx % 7) + 1
-        logger.log("adj_man_times idx post % 7: " + str(idx))
         retVal = (idx,dt,man)
     return retVal
 # adj_man_time
@@ -138,7 +137,7 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
             water_dict['conf']['man_times'][idx] += delta
             # This is better that the comment block below to keep man_times between 0 and 99 (inclusive)
             water_dict['conf']['man_times'][idx] = max(0, min(water_dict['conf']['man_times'][idx], 99))
-            
+            # Save this block            
             #if water_dict['conf']['man_times'][idx] > 99:
             #    water_dict['conf']['man_times'][idx] = 99
             #if water_dict['conf']['man_times'][idx] < 0:
@@ -165,16 +164,13 @@ def main(scr):
     foot_height = 2; foot_width = headder_width
 
     headder_win = curses.newwin(headder_height, headder_width, headder_begin_y, headder_begin_x)
-    #headder_win.border()
-    
+
     body_win = curses.newwin(body_height, body_width, body_begin_y, body_begin_x)
-    #body_win.border()
 
     foot_win = curses.newwin(foot_height, foot_width, foot_begin_y, foot_begin_x)
-    #foot_win.border()
 
     escapekey = False
-    ll = logger.logger("main")
+    ll = logger.logger("water")
 
 
     # Read conf file
@@ -202,8 +198,8 @@ def main(scr):
     #temp_events = [event_quit, event_temp_update]
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", water_dict, event_quit, event_man_run)
-    thread2 = TempThread.daqcThread(2, "daqcThread", daqc_dict, event_quit)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, event_man_run)
+    thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
     
     # Start new Threads
     thread1.start()
