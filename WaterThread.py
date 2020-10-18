@@ -9,16 +9,17 @@ import json
 # relay-plate. The shared innput dictionary can be expanded to include weather data that may be used
 # to dynamically modify runtimes.
 class WaterThread(threading.Thread):
-    def __init__(self, threadID, name, in_dict, e_quit, e_mr):
+    def __init__(self, threadID, name, logger, in_dict, e_quit, e_mr):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
-        self.ll = logger.logger("water")
+        #self.ll = logger.logger("water")
+        self.ll = logger
         self.in_dict = in_dict
         self.e_quit = e_quit
         self.e_mr = e_mr
         self.pid = self.in_dict['conf']['pid']
-        self.relay_board = RelayBoard(self.pid, e_quit)
+        self.relay_board = RelayBoard(self.pid, logger, e_quit)
 
         # The days of the week Mon = 0, Tue = 1...
         self.previous_day = -1
@@ -46,19 +47,12 @@ class WaterThread(threading.Thread):
         # The days of the week Mon = 0, Tue = 1...
         cls.day = datetime.today().weekday()
 
-        cls.ll.log("man_times[]: " + str(cls.man_times), "d")
-        cls.ll.log("in_dict[man_mode]: " + str(cls.in_dict["man_mode"]),"d")
-
-        cls.ll.log("0 in_dict[man_run]: " + str(cls.in_dict["man_run"]), "d")
-
         if cls.in_dict["man_mode"] is 0:
             today_times = cls.run_times[cls.day].copy()
             cls.run_today = cls.run_times[cls.day].copy()
             
-            cls.ll.log("0 STANDARD set_run_today cls.run_today: " + str(cls.run_today))
             for v in range(1,8):
                 cls.run_today[v] = cls.run_today[v-1] + today_times[v]
-            cls.ll.log("1 STANDARD set_run_today cls.run_today: " + str(cls.run_today))
 
             cls.run_today = list(map(lambda v: v * 60, cls.run_today))
             cls.ll.log("cls.run_today: " + str(cls.run_today),"d")
@@ -71,16 +65,12 @@ class WaterThread(threading.Thread):
             cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
 
             # do the run min in sec then add in the start time to every element (lambda baby!)
-            cls.ll.log("1.5 MANUAL set_run_today cls.run_today: " + str(cls.man_times))
             for v in range(1,8):
                 cls.run_today[v] = cls.run_today[v-1] + cls.man_times[v]
             cls.ll.log("1.6 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
 
             cls.run_today = list(map(lambda v: v * 60, cls.run_today.copy()))
 
-            cls.ll.log("2 MANUAL now_in_sec: " + str(now_in_sec))
-            cls.ll.log("2 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
-            cls.ll.log("in_dict[man_run] 0: " + str(cls.in_dict["man_run"]), "d")
             emr = "false"
             if cls.e_mr.is_set():
                 emr = "true"
@@ -91,7 +81,6 @@ class WaterThread(threading.Thread):
                 cls.start_time = now_in_sec
                 cls.ll.log("in_dict[man_run] 1: " + str(cls.in_dict["man_run"]), "d")
 
-        cls.ll.log("0 start_tm: " + str(cls.start_tm))
         temp_list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         cls.run_today = cls.run_today.copy()#temp_list.copy()
         cls.ll.log("SUM run_today: " + str(cls.run_today))
@@ -100,20 +89,12 @@ class WaterThread(threading.Thread):
     def run(cls):
         while not cls.e_quit.is_set():
             rl = logger.logger("water run")
-            rl.log("WOOT")
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
-            cls.ll.log("now_in_sec: " + str(now_in_sec))
+            cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
             cls.day = datetime.today().weekday()
-            cls.ll.log("day: " + str(cls.day))
-            cls.ll.log("cls.run_today[0] " + str(cls.run_today[0]))
-            cls.ll.log("cls.run_today[7] " + str(cls.run_today[7]))
-
-            cls.ll.log("BEFORE *** cls.run_today[] " + str(cls.run_today), "d")
-            cls.ll.log("cls.day " + str(cls.day) + " cls.previous_day " + str(cls.previous_day), "d")
+            cls.ll.log("day: " + str(cls.day), "d")
             cls.set_run_today(now_in_sec)
-            cls.ll.log("run() AFTER ***cls.run_today[] " + str(cls.run_today), "d")
-
             cls.local_start_time = now_in_sec - cls.start_time
             cls.ll.log("cls.local_start_time: " + str(cls.local_start_time), "d")
             cls.in_dict['valve_status'] = 0
@@ -135,18 +116,14 @@ class WaterThread(threading.Thread):
                         cls.ll.log("sec: " + str(sec))
                         minn = int((sec_remaining - sec) / 60)
                         cls.ll.log("sec_remaining " + str(sec_remaining)  + " - " + str(sec_remaining/60)+ " in 7 bit: " + str(2**v))
-                        time_remaining = datetime.fromtimestamp(sec_remaining)
-                        cls.ll.log("time remianing: " + str(time_remaining))
-                        cls.ll.log("time remaining min sec: " + str(minn) + ":" + str(sec).zfill(2))
                         relay = 2**v
                         cls.relay_board.set_all_relays(relay)
-                        cls.ll.log("SPRINKLER DICT[0]: " + str(cls.in_dict['valve_status']))
-                    else:
-                        cls.relay_board.set_all_relays(0)
-                        cls.ll.log("CLEAR ALL RELAYS: " + str(v))
             else:
+                cls.relay_board.set_all_relays(0)
+                cls.ll.log("cls.relay_board.set_all_relays(0) in else")
                 cls.in_dict["man_run"] = 0
                 cls.e_mr.clear()
-            cls.ll.log("SPRINKLER DICT[0]: " + str(cls.in_dict['valve_status']))
             cls.e_quit.wait(timeout=5)
+        # while
+        cls.relay_board.set_all_relays(0)
     # run

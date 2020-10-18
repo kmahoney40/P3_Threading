@@ -5,11 +5,11 @@ import time
 import logger
 
 class RelayBoard:
-    def __init__(self, pid, oConf):
+    def __init__(self, pid, logger, oConf):
         self.name = "RelayBoard_" + str(pid)
         self.pid = pid
         self.oConf = oConf
-        self.ll = logger.logger("ADBoard __int__ called")
+        self.ll = logger# logger.logger("ADBoard __int__ called")
         self.ll.log("RelayBoard __int__ pid = " + str(self.pid))
         self.ll.log("RelayBoard oConf = " + str(self.oConf))
         #self.Relay_Plate = RelayPlate(self.pid, self.o)
