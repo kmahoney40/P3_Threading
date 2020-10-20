@@ -11,6 +11,7 @@ class daqcThread(threading.Thread):
         self.threadID = threadID
         self.name = name
         self.in_dict = in_dict
+        self.ll = logger
         self.event = event
         self.adc = ADBoard(0, logger, event)
 
@@ -18,4 +19,5 @@ class daqcThread(threading.Thread):
         while not cls.event.is_set():            
             for t in range(3):
                 cls.in_dict[t] = cls.adc.get_adc_filter(t)
-            cls.event.wait(timeout=5)
+            cls.ll.log("Temp Thread")
+            cls.event.wait(timeout=5.0)

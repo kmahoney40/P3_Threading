@@ -64,9 +64,9 @@ class ADBoard(DaqcPlate):
         else:
             cls.limit_counter[0][idx] += 1
             ret_val = True
-        cls.ll.log("#############                raw " + str(raw))
-        cls.ll.log("############# limit_counter[0][" + str(idx) + "] " + str(cls.limit_counter[0][idx]))
-        cls.ll.log("############# limit_counter[1][" + str(idx) + "] " + str(cls.limit_counter[1][idx]))
+        cls.ll.log("raw " + str(raw))
+        cls.ll.log("limit_counter[0][" + str(idx) + "] " + str(cls.limit_counter[0][idx]))
+        cls.ll.log("limit_counter[1][" + str(idx) + "] " + str(cls.limit_counter[1][idx]))
         return ret_val
     # limit_d
 

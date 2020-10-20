@@ -127,13 +127,13 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
                 logger.log("m pressed: mode = " + str(mode))
             
         if mode[0] == "Water/Manual":
-            logger.log("man_mode = " + str(water_dict["man_mode"]))
+            #logger.log("man_mode = " + str(water_dict["man_mode"]))
             if chr(c) == 'r' and water_dict["man_mode"] is 1:
                 water_dict["man_run"] = 1
                 event_man_run.set()
 
             idx,delta,man_run = adj_man_time(chr(c), logger)
-            logger.log("idx,delta = " + str(idx) + "," + str(delta) + "," + str(man_run), "d")
+            #logger.log("idx,delta = " + str(idx) + "," + str(delta) + "," + str(man_run), "d")
             water_dict['conf']['man_times'][idx] += delta
             # This is better that the comment block below to keep man_times between 0 and 99 (inclusive)
             water_dict['conf']['man_times'][idx] = max(0, min(water_dict['conf']['man_times'][idx], 99))
@@ -210,25 +210,25 @@ def main(scr):
     threads.append(thread2)
    
    
-    id = 0
+    #id = 0
     keep_going = True
     while keep_going:
         # Returns False if 'q' is pressed
         if not read_keyboard(scr, event_quit, event_man_run, mode, ll):
             break
-
         display_head(headder_win, ll, mode[0])
         display_body(body_win, ll)
         display_foot(foot_win, ll)
 
-        id += 1
+        #id += 1
         headder_win.refresh()
         body_win.refresh()
         foot_win.refresh()
-        time.sleep(0.1)
+        time.sleep(1.1)
 
     # Wait for all threads to complete
     for t in threads:
+        ll.log("JOIN")
         t.join()
 
     scr.refresh()
