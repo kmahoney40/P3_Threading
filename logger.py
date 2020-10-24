@@ -3,18 +3,32 @@ import datetime
 from logging.handlers import TimedRotatingFileHandler
 
 class logger:
-    def __init__(self, file_name):
+    def __init__(self, file_name, log_level):
         self.today = datetime.date.today()
         self.file_name = file_name
         #log_file = self.file_name + "_" + str(self.today) + ".log"
+
+        l_level = "bob"
+        if log_level == "DEBUG":
+            l_level = logging.DEBUG
+        if log_level == "INFO":
+            l_level = logging.INFO
+        if log_level == "WARNING":
+            l_level = logging.WARN
+        if log_level == "ERROR":
+            l_level = logging.ERROR
+        if log_level == "CRITICAL":
+            l_level = logging.CRITICAL
+
+
         log_file = '/var/log/automation/' + self.file_name + "_" + str(self.today) + '.log'
-        #logging.basicConfig(filename=log_file, level=logging.DEBUG)
+        logging.basicConfig(filename=log_file, level=l_level)
         self.logger = logging.getLogger("Rotating Log")
-        self.logger.setLevel(logging.INFO)
+        #self.logger.setLevel(logging.INFO)
         log_file = "/var/log/automation/water.log"
         self.handler = TimedRotatingFileHandler(log_file,
-                                            when="h",
-                                            #interval=1,
+                                            when="midnight",
+                                            interval=1,
                                             backupCount=5)
         self.logger.addHandler(self.handler)
         
@@ -32,18 +46,16 @@ class logger:
             # logging.basicConfig(filename=log_file)
 
 
+        if lvl.lower() == "d":
+            cls.logger.debug(dtnow + msg)
         if lvl.lower() == "i":
-            #logging.info(dtnow + msg)
             cls.logger.info(dtnow + msg)
         if lvl.lower() == "w":
-            #logging.warning(dtnow + msg)
             cls.logger.warning(dtnow + msg)
         if lvl.lower() == "e":
-            #logging.error(dtnow + msg)
             cls.logger.error(dtnow + msg)
-        if lvl.lower() == "d":
-            #logging.debug(dtnow + msg)
-            cls.logger.debug(dtnow + msg)
+        if lvl.lower() == "c":
+            cls.logger.critical(dtnow + msg)
 
     # def log()
 # class Logger

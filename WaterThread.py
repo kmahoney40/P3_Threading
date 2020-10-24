@@ -9,17 +9,19 @@ import json
 # relay-plate. The shared innput dictionary can be expanded to include weather data that may be used
 # to dynamically modify runtimes.
 class WaterThread(threading.Thread):
-    def __init__(self, threadID, name, logger, in_dict, e_quit, e_mr):
+    def __init__(self, threadID, name, logger1, in_dict, e_quit, e_mr):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         #self.ll = logger.logger("water")
-        self.ll = logger
+        #self.ll = logger.logger("WaterThread")
+        self.ll = logger1
         self.in_dict = in_dict
         self.e_quit = e_quit
         self.e_mr = e_mr
         self.pid = self.in_dict['conf']['pid']
-        self.relay_board = RelayBoard(self.pid, logger, e_quit)
+        self.relay_board = RelayBoard(self.pid, logger1, e_quit)
+        #self.log = logger.logger("WaterThread")
 
         # The days of the week Mon = 0, Tue = 1...
         self.previous_day = -1
@@ -60,9 +62,9 @@ class WaterThread(threading.Thread):
             cls.start_tm = cls.start_time
         else:
             today_times = (cls.run_times[cls.day])[:]
-            cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            #cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
             cls.run_today = cls.man_times.copy()
-            cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            #cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
 
             # do the run min in sec then add in the start time to every element (lambda baby!)
             for v in range(1,8):
@@ -71,10 +73,10 @@ class WaterThread(threading.Thread):
 
             cls.run_today = list(map(lambda v: v * 60, cls.run_today.copy()))
 
-            emr = "false"
-            if cls.e_mr.is_set():
-                emr = "true"
-            cls.ll.log("man_run: " + str(cls.in_dict["man_run"]) + " event_man_run: " + emr )
+            #emr = "false"
+            #if cls.e_mr.is_set():
+            #    emr = "true"
+            #cls.ll.log("man_run: " + str(cls.in_dict["man_run"]) + " event_man_run: " + emr )
             #if cls.in_dict["man_run"] is not 1:
             if not cls.e_mr.is_set():
                 cls.local_start_time = now_in_sec
@@ -88,15 +90,13 @@ class WaterThread(threading.Thread):
 
     def run(cls):
         while not cls.e_quit.is_set():
-            rl = logger.logger("water run")
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
-            cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
+            #cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
             cls.day = datetime.today().weekday()
-            cls.ll.log("day: " + str(cls.day), "d")
+            #cls.ll.log("day: " + str(cls.day), "d")
             cls.set_run_today(now_in_sec)
             cls.local_start_time = now_in_sec - cls.start_time
-            cls.ll.log("cls.local_start_time: " + str(cls.local_start_time), "d")
             cls.in_dict['valve_status'] = 0
             cls.ll.log("cls.run_today[0]: " + str(cls.run_today[0]) + " now_in_sec: " + str(now_in_sec) + " cls.run_today[7]: " + str(cls.run_today[7]), "d")
             if cls.run_today[0] < cls.local_start_time < cls.run_today[7]:
@@ -115,7 +115,6 @@ class WaterThread(threading.Thread):
                         cls.ll.log("time_remaining str: " + time_remaining_str)
                         cls.ll.log("sec: " + str(sec))
                         minn = int((sec_remaining - sec) / 60)
-                        cls.ll.log("sec_remaining " + str(sec_remaining)  + " - " + str(sec_remaining/60)+ " in 7 bit: " + str(2**v))
                         relay = 2**v
                         cls.relay_board.set_all_relays(relay)
             else:
@@ -123,7 +122,8 @@ class WaterThread(threading.Thread):
                 cls.ll.log("cls.relay_board.set_all_relays(0) in else")
                 cls.in_dict["man_run"] = 0
                 cls.e_mr.clear()
-            cls.e_quit.wait(timeout=5)
+            cls.ll.log("WATER THREAD" + " threadID: " + str(cls.threadID))
+            cls.e_quit.wait(timeout=5.0)
         # while
         cls.relay_board.set_all_relays(0)
     # run
