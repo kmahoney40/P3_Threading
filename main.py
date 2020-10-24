@@ -107,6 +107,7 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
     if c != curses.ERR:
         if chr(c) == 'q':
             event_quit.set()
+            logger.log("Stopped by user - pressed q", "w")
             ret_val = False
         if chr(c) == 'w':
             mode[0] = "Water"
@@ -170,7 +171,6 @@ def main(scr):
     foot_win = curses.newwin(foot_height, foot_width, foot_begin_y, foot_begin_x)
 
     escapekey = False
-    ll = logger.logger("water")
 
 
     # Read conf file
@@ -178,6 +178,10 @@ def main(scr):
     conf_data = conf_file.read()
     conf_json = json.loads(conf_data)
     water_dict['conf'] = conf_json
+
+    ll = logger.logger("water", water_dict['conf']['log_level'])
+
+
     ll.log("setup - water_dict['valve_status']: " + str(water_dict['valve_status']))
     ll.log("setup - water_dict['conf']: " + str(water_dict['conf']))
     ll.log("setup - water_dict['conf']['start_time']: " + str(water_dict['conf']['start_time']))

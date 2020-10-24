@@ -16,7 +16,13 @@ class daqcThread(threading.Thread):
         self.adc = ADBoard(0, logger, event)
 
     def run(cls):
-        while not cls.event.is_set():            
+        while not cls.event.is_set():
+            cls.ll.log("DEBUG d", "d")
+            cls.ll.log("INFO i", "i")
+            cls.ll.log("WARNING w", "w")
+            cls.ll.log("ERROR e", "e")
+            cls.ll.log("CRITICAL c", "c")
+
             for t in range(3):
                 cls.in_dict[t] = cls.adc.get_adc_filter(t)
             cls.ll.log("Temp Thread")

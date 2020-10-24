@@ -62,9 +62,9 @@ class WaterThread(threading.Thread):
             cls.start_tm = cls.start_time
         else:
             today_times = (cls.run_times[cls.day])[:]
-            cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            #cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
             cls.run_today = cls.man_times.copy()
-            cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            #cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
 
             # do the run min in sec then add in the start time to every element (lambda baby!)
             for v in range(1,8):
@@ -73,10 +73,10 @@ class WaterThread(threading.Thread):
 
             cls.run_today = list(map(lambda v: v * 60, cls.run_today.copy()))
 
-            emr = "false"
-            if cls.e_mr.is_set():
-                emr = "true"
-            cls.ll.log("man_run: " + str(cls.in_dict["man_run"]) + " event_man_run: " + emr )
+            #emr = "false"
+            #if cls.e_mr.is_set():
+            #    emr = "true"
+            #cls.ll.log("man_run: " + str(cls.in_dict["man_run"]) + " event_man_run: " + emr )
             #if cls.in_dict["man_run"] is not 1:
             if not cls.e_mr.is_set():
                 cls.local_start_time = now_in_sec
@@ -92,9 +92,9 @@ class WaterThread(threading.Thread):
         while not cls.e_quit.is_set():
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
-            cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
+            #cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
             cls.day = datetime.today().weekday()
-            cls.ll.log("day: " + str(cls.day), "d")
+            #cls.ll.log("day: " + str(cls.day), "d")
             cls.set_run_today(now_in_sec)
             cls.local_start_time = now_in_sec - cls.start_time
             cls.in_dict['valve_status'] = 0
