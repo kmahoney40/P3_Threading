@@ -1,5 +1,6 @@
 import threading
 import time
+import requests
 from datetime import datetime
 from relay_board import RelayBoard
 import logger
@@ -89,12 +90,18 @@ class WaterThread(threading.Thread):
     # set_run_today
 
     def run(cls):
+
         while not cls.e_quit.is_set():
+
+            ret = requests.get('http://192.168.1.140/')
+            cls.ll.log("requests.get.json(): " + json.dumps(ret.json()), "d")
+
+            ret = requests.post('http://192.168.1.140/post1', json={'item': 'WOOT'})
+            cls.ll.log("requests.post: " + ret.text, "d")
+
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
-            #cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
             cls.day = datetime.today().weekday()
-            #cls.ll.log("day: " + str(cls.day), "d")
             cls.set_run_today(now_in_sec)
             cls.local_start_time = now_in_sec - cls.start_time
             cls.in_dict['valve_status'] = 0
@@ -114,7 +121,7 @@ class WaterThread(threading.Thread):
                         cls.in_dict["time_remaining"] = time_remaining_str
                         cls.ll.log("time_remaining str: " + time_remaining_str)
                         cls.ll.log("sec: " + str(sec))
-                        minn = int((sec_remaining - sec) / 60)
+                        #minn = int((sec_remaining - sec) / 60)
                         relay = 2**v
                         cls.relay_board.set_all_relays(relay)
             else:

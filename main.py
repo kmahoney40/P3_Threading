@@ -65,6 +65,12 @@ def display_body(win, logger):
         logger.log("Error in display_body: " + str(sys.exc_info()[0]))
 # display_body
 
+def display2_body(win, logger):
+    try:
+        logger.log("@@@@@@@@@@@@@@ display2_body: " + str(sys.exc_info()[0]), "d")
+    except:
+        logger.log("Error in display2_body: " + str(sys.exc_info()[0]), "e")
+
 def display_foot(win, logger):
     try:
         win.addstr(0, 0, str(7), curses.A_UNDERLINE)
@@ -167,6 +173,7 @@ def main(scr):
     headder_win = curses.newwin(headder_height, headder_width, headder_begin_y, headder_begin_x)
 
     body_win = curses.newwin(body_height, body_width, body_begin_y, body_begin_x)
+    temp_body_win = curses.newwin(body_height, body_width, body_begin_y, body_begin_x)
 
     foot_win = curses.newwin(foot_height, foot_width, foot_begin_y, foot_begin_x)
 
@@ -179,7 +186,7 @@ def main(scr):
     conf_json = json.loads(conf_data)
     water_dict['conf'] = conf_json
 
-    ll = logger.logger("water", water_dict['conf']['log_level'])
+    ll = logger.logger("water", water_dict['conf']['log_level'])    
 
 
     ll.log("setup - water_dict['valve_status']: " + str(water_dict['valve_status']))
@@ -198,7 +205,7 @@ def main(scr):
     # todo Use Dictionary quit:, t1: or water_event, t2 or temp_event
     event_quit = threading.Event()
     event_man_run = threading.Event()
-    water_events = [event_quit, event_man_run]
+    #water_events = [event_quit, event_man_run]
     #temp_events = [event_quit, event_temp_update]
     # Create new threads
     threads = []
@@ -221,7 +228,10 @@ def main(scr):
         if not read_keyboard(scr, event_quit, event_man_run, mode, ll):
             break
         display_head(headder_win, ll, mode[0])
-        display_body(body_win, ll)
+        if mode[0] == "Water":
+            display_body(body_win, ll)
+        else:
+            display2_body(temp_body_win, ll)
         display_foot(foot_win, ll)
 
         #id += 1
