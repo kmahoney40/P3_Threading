@@ -47,15 +47,15 @@ class logger:
 
 
         if lvl.lower() == "d":
-            cls.logger.debug(dtnow + msg)
+            cls.logger.debug(dtnow + "DEBUG: " + msg)
         if lvl.lower() == "i":
-            cls.logger.info(dtnow + msg)
+            cls.logger.info(dtnow + "INFO: " + msg)
         if lvl.lower() == "w":
-            cls.logger.warning(dtnow + msg)
+            cls.logger.warning(dtnow + "WARNING: " + msg)
         if lvl.lower() == "e":
-            cls.logger.error(dtnow + msg)
+            cls.logger.error(dtnow + "ERROR: " + msg)
         if lvl.lower() == "c":
-            cls.logger.critical(dtnow + msg)
+            cls.logger.critical(dtnow + "CRITICAL: " + msg)
 
     # def log()
 # class Logger
