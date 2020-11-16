@@ -242,12 +242,14 @@ def main(scr):
         body_win.refresh()
         foot_win.refresh()
         
-        
         now = datetime.now()
-        if(now.minute >= 0 and send_mail):
-            mail.send_mail(None, str(now))
-            send_mail = False
-        
+        if(now.minute >= 0)
+            if (send_mail):
+                mail.send_mail(None, str(now))
+                send_mail = False
+        else:
+            send_mail = True
+
         time.sleep(1.1)
 
     # Wait for all threads to complete
