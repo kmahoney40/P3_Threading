@@ -228,12 +228,13 @@ def main(scr):
         if not read_keyboard(scr, event_quit, event_man_run, mode, ll):
             break
         display_head(headder_win, ll, mode[0])
-        if mode[0] == "Water":
-            display_body(body_win, ll)
-        else:
-            display2_body(temp_body_win, ll)
+        #if mode[0] == "Water":
+        #    display_body(body_win, ll)
+        #else:
+        #    display2_body(temp_body_win, ll)
         display_foot(foot_win, ll)
-
+        display_body(body_win, ll)
+        
         #id += 1
         headder_win.refresh()
         body_win.refresh()
@@ -247,6 +248,7 @@ def main(scr):
         t.join()
 
     scr.refresh()
+    scr.clear()
 # def main
 
 if __name__ == '__main__':
@@ -254,6 +256,7 @@ if __name__ == '__main__':
         curses.wrapper(main)
     finally:
         curses.endwin()
+        print('Quit by user')
 # if __name__
 
 

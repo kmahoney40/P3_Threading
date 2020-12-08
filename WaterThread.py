@@ -44,7 +44,7 @@ class WaterThread(threading.Thread):
         now = datetime.now()
         #if(now.minute >= 0)
         #    if (send_mail):
-        self.mail.send_mail('from WaterThread ctor', str(now))
+        #self.mail.send_mail('from WaterThread ctor', str(now))
         #        send_mail = False
         #else:
         #    send_mail = True
@@ -103,7 +103,9 @@ class WaterThread(threading.Thread):
     # set_run_today
 
     def run(cls):
-
+        #now = datetime.now()
+        #cls.mail.send_mail('From WaterThread run()', str(now))
+        #cls.mail.send_mail('from WaterThread ctor', str(now))
         while not cls.e_quit.is_set():
 
             ret = requests.get('http://192.168.1.106/polls/pi')
@@ -121,9 +123,9 @@ class WaterThread(threading.Thread):
             cls.ll.log("cls.run_today[0]: " + str(cls.run_today[0]) + " now_in_sec: " + str(now_in_sec) + " cls.run_today[7]: " + str(cls.run_today[7]), "d")
             if cls.run_today[0] < cls.local_start_time < cls.run_today[7]:
                 
-                if cls.send_mail:
-                    self.mail.send_mail('From WaterThread run()', str(now))
-                    cls.send_mail = False
+                #if cls.send_mail:
+                #    cls.mail.send_mail('From WaterThread run()', str(now))
+                #    cls.send_mail = False
                 
                 cls.ll.log("cls.run_today[0] < now_in_sec < cls.run_today[7]", "d")
                 for v in range(7):
