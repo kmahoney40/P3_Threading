@@ -5,6 +5,8 @@ from datetime import datetime
 from relay_board import RelayBoard
 import logger
 import json
+import e_mail
+
 
 # This class will read/write all the commands to run the sprinklers. At this point a single
 # relay-plate. The shared innput dictionary can be expanded to include weather data that may be used
@@ -35,7 +37,18 @@ class WaterThread(threading.Thread):
         self.run_today = self.run_times[self.day].copy()
         self.ll.log("in_dict.[start_time]: " + str(in_dict["conf"]["start_time"]))
         self.ll.log("run_today: " + str(self.run_today))
-        
+
+        self.send_mail = True
+        self.mail = e_mail.e_mail()
+        # want something like fabs(now - start_time) < 3 sec -> send mail
+        now = datetime.now()
+        #if(now.minute >= 0)
+        #    if (send_mail):
+        #self.mail.send_mail('from WaterThread ctor', str(now))
+        #        send_mail = False
+        #else:
+        #    send_mail = True
+
         # confJson["start_time"] in 24 hour hhmm
         self.start_time = in_dict["conf"]["start_time"]
         hours = self.start_time // 100
@@ -90,14 +103,16 @@ class WaterThread(threading.Thread):
     # set_run_today
 
     def run(cls):
-
+        #now = datetime.now()
+        #cls.mail.send_mail('From WaterThread run()', str(now))
+        #cls.mail.send_mail('from WaterThread ctor', str(now))
         while not cls.e_quit.is_set():
 
-            ret = requests.get('http://192.168.1.140/')
-            cls.ll.log("requests.get.json(): " + json.dumps(ret.json()), "d")
+            ret = requests.get('http://192.168.1.106/polls/pi')
+            cls.ll.log("requests.get.json(): " + str(ret.text), "d")
 
-            ret = requests.post('http://192.168.1.140/post1', json={'item': 'WOOT'})
-            cls.ll.log("requests.post: " + ret.text, "d")
+            #ret = requests.post('http://192.168.1.140/post1', json={'item': 'WOOT'})
+            #cls.ll.log("requests.post: " + ret.text, "d")
 
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
@@ -107,6 +122,11 @@ class WaterThread(threading.Thread):
             cls.in_dict['valve_status'] = 0
             cls.ll.log("cls.run_today[0]: " + str(cls.run_today[0]) + " now_in_sec: " + str(now_in_sec) + " cls.run_today[7]: " + str(cls.run_today[7]), "d")
             if cls.run_today[0] < cls.local_start_time < cls.run_today[7]:
+                
+                #if cls.send_mail:
+                #    cls.mail.send_mail('From WaterThread run()', str(now))
+                #    cls.send_mail = False
+                
                 cls.ll.log("cls.run_today[0] < now_in_sec < cls.run_today[7]", "d")
                 for v in range(7):
                     if cls.run_today[v] < cls.local_start_time < cls.run_today[v+1]:
@@ -125,6 +145,7 @@ class WaterThread(threading.Thread):
                         relay = 2**v
                         cls.relay_board.set_all_relays(relay)
             else:
+                cls.send_mail = True
                 cls.relay_board.set_all_relays(0)
                 cls.ll.log("cls.relay_board.set_all_relays(0) in else")
                 cls.in_dict["man_run"] = 0
