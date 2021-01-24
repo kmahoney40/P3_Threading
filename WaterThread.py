@@ -107,12 +107,25 @@ class WaterThread(threading.Thread):
         #cls.mail.send_mail('From WaterThread run()', str(now))
         #cls.mail.send_mail('from WaterThread ctor', str(now))
         while not cls.e_quit.is_set():
+            cls.ll.log("ERROR COMMING")
+            try:
+                ret = requests.get('http://192.168.1.106/polls/pi')
+                cls.ll.log("requests.get.json(): " + str(ret.text), "d")
+            except Exception as ex:
+                cls.ll.log("Exception: " + str(ex), 'e')
+            #url = 'http://192.168.1.106/water/temp/save'
+            #client = requests.session()
+            #client.get(url)
+            #csrftoken = client.cookies['csrftoken']
 
-            ret = requests.get('http://192.168.1.106/polls/pi')
-            cls.ll.log("requests.get.json(): " + str(ret.text), "d")
+            # DELETE needs trailing / in url, get does not.
+
+            #my_data = {login:"somepersonsname", password:"supergreatpassword", csrfmiddlewaretoken:csrftoken}
+            
+            #r = requests.post('http://192.168.1.106/water/temp/save') 
 
             #ret = requests.post('http://192.168.1.140/post1', json={'item': 'WOOT'})
-            #cls.ll.log("requests.post: " + ret.text, "d")
+            #cls.ll.log("requests.post: " + r.text, "d")
 
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())

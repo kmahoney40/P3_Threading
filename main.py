@@ -254,6 +254,8 @@ def main(scr):
 if __name__ == '__main__':
     try:
         curses.wrapper(main)
+    except Exception as ex:
+        print("Exception in main() loop, trying to continue:" + str(ex))
     finally:
         curses.endwin()
         print('Quit by user')
