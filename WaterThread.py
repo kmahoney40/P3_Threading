@@ -1,12 +1,12 @@
 import threading
 import time
-import requests
+#import requests
 from datetime import datetime
 from relay_board import RelayBoard
 import logger
 import json
-import e_mail
-from Request import Request
+#import e_mail
+#from Request import Request
 
 
 # This class will read/write all the commands to run the sprinklers. At this point a single
@@ -26,7 +26,7 @@ class WaterThread(threading.Thread):
         self.pid = self.in_dict['conf']['pid']
         self.relay_board = RelayBoard(self.pid, logger1, e_quit)
         #self.log = logger.logger("WaterThread")
-        self.request = Request('http://192.168.1.106/', logger1)
+        #self.request = Request('http://192.168.1.106/', logger1)
 
         # The days of the week Mon = 0, Tue = 1...
         self.previous_day = -1
@@ -41,7 +41,7 @@ class WaterThread(threading.Thread):
         self.ll.log("run_today: " + str(self.run_today))
 
         self.send_mail = True
-        self.mail = e_mail.e_mail()
+        #self.mail = e_mail.e_mail()
         # want something like fabs(now - start_time) < 3 sec -> send mail
         now = datetime.now()
         #if(now.minute >= 0)
@@ -109,13 +109,13 @@ class WaterThread(threading.Thread):
         #cls.mail.send_mail('From WaterThread run()', str(now))
         #cls.mail.send_mail('from WaterThread ctor', str(now))
         while not cls.e_quit.is_set():
-            r = cls.request.http_get('polls/pi')
-            cls.ll.log("Request.http_get(): " + str(r), "d")
-            try:
-                ret = requests.get('http://192.168.1.106/polls/pi')
-                cls.ll.log("requests.get.json(): " + str(ret.text), "d")
-            except Exception as ex:
-                cls.ll.log("Exception: " + str(ex), 'e')
+            #r = cls.request.http_get('polls/pi')
+            #cls.ll.log("Request.http_get(): " + str(r), "d")
+            #try:
+            #    ret = request.get('polls/pi')
+            #   cls.ll.log("requests.get.json(): " + str(ret.text), "d")
+            #except Exception as ex:
+            #    cls.ll.log("Exception: " + str(ex), 'e')
             #url = 'http://192.168.1.106/water/temp/save'
             #client = requests.session()
             #client.get(url)

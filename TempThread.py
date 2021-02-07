@@ -1,9 +1,10 @@
 import threading
 import time
 import json
+import sys
 import requests
 from ad_board import ADBoard 
-from Request import Request
+#from Request import Request
 
 
 # The daqcThread class will read/write the daqc-plate and a relay-plate to monitor temps in and
@@ -17,7 +18,7 @@ class daqcThread(threading.Thread):
         self.ll = logger
         self.event = event
         self.adc = ADBoard(0, logger, event)
-        self.request = Request('http://192.168.1.106/', logger)
+        #self.request = Request('http://192.168.1.106/', logger)
 
     def raw_to_f(cls, raw):
         # 180.0 * raw - 58 = (100.0 * raw - 50.0) * 1.8 + 32.0
@@ -39,17 +40,14 @@ class daqcThread(threading.Thread):
             my_data["t4"] = 0
             my_data["t5"] = 0
 
-            #ret = requests.get('http://192.168.1.106/polls/pi')
-            #cls.ll.log("requests.get.json(): " + str(ret.text), "d")
-
-
-            newHeaders = {'Content-type': 'application/json'}
-
-
-            my_json_string = json.dumps(my_data)
-            cls.ll.log("my_json_string: " + str(my_json_string), "d")
-            #ret = requests.post('http://192.168.1.106/temp/', headers=newHeaders, data=my_json_string)
-            ret = cls.request.http_post('temp', newHeaders, my_json_string)
-            cls.ll.log("requests.get.json(): " + str(ret.text), "d")
+            try:
+                newHeaders = {'Content-type': 'application/json'}
+                my_json_string = json.dumps(my_data)
+                cls.ll.log("my_json_string: " + str(my_json_string), "d")
+                ret = requests.post('http://192.168.1.106/temp/temp/', headers=newHeaders, data=my_json_string)
+                #ret = cls.request.http_post('temp', newHeaders, my_json_string)
+                cls.ll.log("request.http_post() status_code: " + str(ret.status_code), "d")
+            except:
+                cls.ll.log("TEMP ERROR: " + str(sys.exc_info()[0]), "e")
 
             cls.event.wait(timeout=900.0)
