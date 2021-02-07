@@ -7,6 +7,8 @@ import json
 import WaterThread
 import TempThread
 import logger
+import e_mail
+
 
 
 # These will become JSON
@@ -220,6 +222,9 @@ def main(scr):
     threads.append(thread1)
     threads.append(thread2)
    
+    mail = e_mail.e_mail()
+    now = datetime.now()
+    mail.send_mail('from WaterThread ctor', str(now))
    
     #id = 0
     keep_going = True
@@ -253,12 +258,14 @@ def main(scr):
 
 if __name__ == '__main__':
     try:
+        exit_string = "Quit by user"
         curses.wrapper(main)
     except Exception as ex:
         print("Exception in main() loop, trying to continue:" + str(ex))
+        exit_string = "Quit on error"
     finally:
         curses.endwin()
-        print('Quit by user')
+        print(exit_string)
 # if __name__
 
 
