@@ -6,6 +6,7 @@ import sys
 import json
 import WaterThread
 import TempThread
+import HttpThread
 import logger
 import e_mail
 
@@ -181,7 +182,7 @@ def main(scr):
     foot_win = curses.newwin(foot_height, foot_width, foot_begin_y, foot_begin_x)
 
     escapekey = False
-
+#todo Turn this into a function, will call it in main when webpage updated runties.
     # Read conf file
     conf_file = open("irrigation.conf", "r")
     conf_data = conf_file.read()
@@ -213,14 +214,17 @@ def main(scr):
     threads = []
     thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, event_man_run)
     thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
+    thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
     
     # Start new Threads
     thread1.start()
     thread2.start()
+    thread3.start()
 
     # Add threads to thread list
     threads.append(thread1)
     threads.append(thread2)
+    threads.append(thread3)
    
     mail = e_mail.e_mail()
     now = datetime.now()
@@ -261,7 +265,7 @@ if __name__ == '__main__':
         exit_string = "Quit by user"
         curses.wrapper(main)
     except Exception as ex:
-        print("Exception in main() loop, trying to continue:" + str(ex))
+        print("Exception in main() loop, trying to continue: " + str(ex))
         exit_string = "Quit on error"
     finally:
         curses.endwin()

@@ -1,12 +1,12 @@
 import threading
 import time
-#import requests
+#import request
 from datetime import datetime
 from relay_board import RelayBoard
 import logger
 import json
 #import e_mail
-#from Request import Request
+from Request import Request
 
 
 # This class will read/write all the commands to run the sprinklers. At this point a single
@@ -26,7 +26,8 @@ class WaterThread(threading.Thread):
         self.pid = self.in_dict['conf']['pid']
         self.relay_board = RelayBoard(self.pid, logger1, e_quit)
         #self.log = logger.logger("WaterThread")
-        #self.request = Request('http://192.168.1.106/', logger1)
+        self.request = Request('http://192.168.1.106/', logger1)
+        self.last_update = 'lastupdate'
 
         # The days of the week Mon = 0, Tue = 1...
         self.previous_day = -1
@@ -109,8 +110,23 @@ class WaterThread(threading.Thread):
         #cls.mail.send_mail('From WaterThread run()', str(now))
         #cls.mail.send_mail('from WaterThread ctor', str(now))
         while not cls.e_quit.is_set():
-            #r = cls.request.http_get('polls/pi')
-            #cls.ll.log("Request.http_get(): " + str(r), "d")
+            
+            # THIS BLOCK WORKS, inside the if, need to add a get to the runtimes table
+            # and then update the config file and reload into memory.  Maybe move this to main.py.
+            r = cls.request.http_get('temp/runtimesaudit/1')
+            #r = cls.Request(temp/runtimesaudit/1)
+            s = str(r.text)
+            j = json.loads(s)
+            d = j['date_modified']
+            if d != cls.last_update:
+                cls.last_update = d
+                cls.ll.log("Updated last_update to: " + d, "d")
+                cls.ll.log("Updated last_update to: " + d, "d")
+                cls.ll.log("Updated last_update to: " + d, "d")
+                cls.ll.log("Updated last_update to: " + d, "d")
+                
+            
+            cls.ll.log("Request(temp/runtimesaudit/1)): " + str(j['date_modified']), "d")
             #try:
             #    ret = request.get('polls/pi')
             #   cls.ll.log("requests.get.json(): " + str(ret.text), "d")
