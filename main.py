@@ -4,6 +4,7 @@ import time
 import curses
 import sys
 import json
+import ConfFile
 import WaterThread
 import TempThread
 import HttpThread
@@ -182,15 +183,14 @@ def main(scr):
     foot_win = curses.newwin(foot_height, foot_width, foot_begin_y, foot_begin_x)
 
     escapekey = False
-#todo Turn this into a function, will call it in main when webpage updated runties.
-    # Read conf file
-    conf_file = open("irrigation.conf", "r")
-    conf_data = conf_file.read()
-    conf_json = json.loads(conf_data)
-    water_dict['conf'] = conf_json
 
+    test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+    cf = ConfFile.ConfFile(test_dict['conf'])
+    test_dict = cf.read_conf()
+
+    water_dict['conf'] = test_dict
+#todo make ll file scope with LogLever = 'DEBUG' then reset log level after call to ConfFile.read_conf()
     ll = logger.logger("water", water_dict['conf']['log_level'])    
-
 
     ll.log("setup - water_dict['valve_status']: " + str(water_dict['valve_status']))
     ll.log("setup - water_dict['conf']: " + str(water_dict['conf']))

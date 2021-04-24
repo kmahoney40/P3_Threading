@@ -4,6 +4,7 @@ import sys
 import time
 import logger
 
+#todo oConf is water_dict in main, rename.
 class RelayBoard:
     def __init__(self, pid, logger, oConf):
         self.name = "RelayBoard_" + str(pid)
