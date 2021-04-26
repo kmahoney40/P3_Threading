@@ -113,20 +113,20 @@ class WaterThread(threading.Thread):
             
             # THIS BLOCK WORKS, inside the if, need to add a get to the runtimes table
             # and then update the config file and reload into memory.  Maybe move this to main.py.
-            r = cls.request.http_get('temp/runtimesaudit/1')
+            #r = cls.request.http_get('temp/runtimesaudit/1')
             #r = cls.Request(temp/runtimesaudit/1)
-            s = str(r.text)
-            j = json.loads(s)
-            d = j['date_modified']
-            if d != cls.last_update:
-                cls.last_update = d
-                cls.ll.log("Updated last_update to: " + d, "d")
-                cls.ll.log("Updated last_update to: " + d, "d")
-                cls.ll.log("Updated last_update to: " + d, "d")
-                cls.ll.log("Updated last_update to: " + d, "d")
+            #s = str(r.text)
+            #j = json.loads(s)
+            #d = j['date_modified']
+            #if d != cls.last_update:
+            #    cls.last_update = d
+            #    cls.ll.log("Updated last_update to: " + d, "d")
+            #    cls.ll.log("Updated last_update to: " + d, "d")
+            #    cls.ll.log("Updated last_update to: " + d, "d")
+            #    cls.ll.log("Updated last_update to: " + d, "d")
                 
             
-            cls.ll.log("Request(temp/runtimesaudit/1)): " + str(j['date_modified']), "d")
+            #cls.ll.log("Request(temp/runtimesaudit/1)): " + str(j['date_modified']), "d")
             #try:
             #    ret = request.get('polls/pi')
             #   cls.ll.log("requests.get.json(): " + str(ret.text), "d")
