@@ -1,11 +1,12 @@
 import threading
 import time
-import requests
+#import request
 from datetime import datetime
 from relay_board import RelayBoard
 import logger
 import json
-import e_mail
+#import e_mail
+from Request import Request
 
 
 # This class will read/write all the commands to run the sprinklers. At this point a single
@@ -25,6 +26,8 @@ class WaterThread(threading.Thread):
         self.pid = self.in_dict['conf']['pid']
         self.relay_board = RelayBoard(self.pid, logger1, e_quit)
         #self.log = logger.logger("WaterThread")
+        self.request = Request('http://192.168.1.106/', logger1)
+        self.last_update = 'lastupdate'
 
         # The days of the week Mon = 0, Tue = 1...
         self.previous_day = -1
@@ -39,7 +42,7 @@ class WaterThread(threading.Thread):
         self.ll.log("run_today: " + str(self.run_today))
 
         self.send_mail = True
-        self.mail = e_mail.e_mail()
+        #self.mail = e_mail.e_mail()
         # want something like fabs(now - start_time) < 3 sec -> send mail
         now = datetime.now()
         #if(now.minute >= 0)
@@ -76,13 +79,14 @@ class WaterThread(threading.Thread):
             cls.start_tm = cls.start_time
         else:
             today_times = (cls.run_times[cls.day])[:]
-            #cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
-            cls.run_today = cls.man_times.copy()
-            #cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            
+            cls.run_today = (cls.in_dict["conf"]["man_times"]).copy()# cls.man_times.copy()
+            cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
 
             # do the run min in sec then add in the start time to every element (lambda baby!)
             for v in range(1,8):
-                cls.run_today[v] = cls.run_today[v-1] + cls.man_times[v]
+                cls.run_today[v] = cls.run_today[v-1] + cls.in_dict["conf"]["man_times"][v]
             cls.ll.log("1.6 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
 
             cls.run_today = list(map(lambda v: v * 60, cls.run_today.copy()))
@@ -98,7 +102,7 @@ class WaterThread(threading.Thread):
                 cls.ll.log("in_dict[man_run] 1: " + str(cls.in_dict["man_run"]), "d")
 
         temp_list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        cls.run_today = cls.run_today.copy()#temp_list.copy()
+        #cls.run_today = cls.run_today.copy()#temp_list.copy()
         cls.ll.log("SUM run_today: " + str(cls.run_today))
     # set_run_today
 
@@ -107,12 +111,46 @@ class WaterThread(threading.Thread):
         #cls.mail.send_mail('From WaterThread run()', str(now))
         #cls.mail.send_mail('from WaterThread ctor', str(now))
         while not cls.e_quit.is_set():
+            
+            # THIS BLOCK WORKS, inside the if, need to add a get to the runtimes table
+            # and then update the config file and reload into memory.  Maybe move this to main.py.
+            #r = cls.request.http_get('temp/runtimesaudit/1')
+            #r = cls.Request(temp/runtimesaudit/1)
+            #s = str(r.text)
+            #j = json.loads(s)
+            #d = j['date_modified']
+            #if d != cls.last_update:
+            #    cls.last_update = d
+            #    cls.ll.log("Updated last_update to: " + d, "d")
+            #    cls.ll.log("Updated last_update to: " + d, "d")
+            #    cls.ll.log("Updated last_update to: " + d, "d")
+            #    cls.ll.log("Updated last_update to: " + d, "d")
+                
+            
+            #cls.ll.log("Request(temp/runtimesaudit/1)): " + str(j['date_modified']), "d")
+            #try:
+            #    ret = request.get('polls/pi')
+            #   cls.ll.log("requests.get.json(): " + str(ret.text), "d")
+            #except Exception as ex:
+            #    cls.ll.log("Exception: " + str(ex), 'e')
+            #url = 'http://192.168.1.106/water/temp/save'
+            #client = requests.session()
+            #client.get(url)
+            #csrftoken = client.cookies['csrftoken']
 
-            ret = requests.get('http://192.168.1.106/polls/pi')
-            cls.ll.log("requests.get.json(): " + str(ret.text), "d")
+            # DELETE needs trailing / in url, get does not.
+
+            #my_data = {login:"somepersonsname", password:"supergreatpassword", csrfmiddlewaretoken:csrftoken}
+            
+            #r = requests.post('http://192.168.1.106/water/temp/save') 
 
             #ret = requests.post('http://192.168.1.140/post1', json={'item': 'WOOT'})
-            #cls.ll.log("requests.post: " + ret.text, "d")
+            #cls.ll.log("requests.post: " + r.text, "d")
+
+
+            cls.ll.log("cls.in_dict: " + str(cls.in_dict), "d")
+            cls.ll.log("cls.in_dict[man_times]: " + str(cls.in_dict["conf"]["man_times"]), "d")
+            cls.ll.log("cls.in_dict[run_times]: " + str(cls.in_dict["conf"]["run_times"]), "d")
 
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())

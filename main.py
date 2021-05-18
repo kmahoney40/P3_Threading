@@ -4,14 +4,36 @@ import time
 import curses
 import sys
 import json
+import ConfFile
 import WaterThread
 import TempThread
+import HttpThread
 import logger
+import e_mail
+
 
 
 # These will become JSON
 #water_dict = [0, {"start_time": 600}]
-water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", 
+                "conf": {
+                    "start_time": 600,
+                    "pid": 0,
+                    "alpha": 0.075,
+                    "log_level": "DEBUG",
+                    "man_times": [0, 0, 0, 0, 0, 0, 0, 0],
+                    "run_times": [
+                        [0, 10, 15,  0,  0, 15, 15, 10],
+                        [10, 10,  10,  0, 45,  10, 10, 10],
+                        [0, 10, 15,  0,  0, 15, 15, 10],
+                        [10,  0,  0,  0,  0,  0,  0,  0],
+                        [5, 5,  0,  0,  0, 15, 0,  5],
+                        [0,  0, 15,  0, 45,  0,  0,  0],
+                        [0, 10,  0,  5,  0,  5,  5,  0]
+                    ]
+                }
+            }
+
 daqc_dict = [0,0,0,0,0,0,0,0]
 days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
@@ -180,14 +202,15 @@ def main(scr):
 
     escapekey = False
 
-    # Read conf file
-    conf_file = open("irrigation.conf", "r")
-    conf_data = conf_file.read()
-    conf_json = json.loads(conf_data)
-    water_dict['conf'] = conf_json
-
     ll = logger.logger("water", water_dict['conf']['log_level'])    
 
+    test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+    cf = ConfFile.ConfFile(test_dict['conf'], ll)
+    test_dict = cf.read_conf('r')
+
+    water_dict['conf'] = test_dict
+#todo make ll file scope with LogLever = 'DEBUG' then reset log level after call to ConfFile.read_conf()
+    #ll = logger.logger("water", water_dict['conf']['log_level'])    
 
     ll.log("setup - water_dict['valve_status']: " + str(water_dict['valve_status']))
     ll.log("setup - water_dict['conf']: " + str(water_dict['conf']))
@@ -211,15 +234,21 @@ def main(scr):
     threads = []
     thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, event_man_run)
     thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
+    #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
     
     # Start new Threads
     thread1.start()
     thread2.start()
+    #thread3.start()
 
     # Add threads to thread list
     threads.append(thread1)
     threads.append(thread2)
+    #threads.append(thread3)
    
+    mail = e_mail.e_mail()
+    now = datetime.now()
+    mail.send_mail('from WaterThread ctor', str(now))
    
     #id = 0
     keep_going = True
@@ -227,6 +256,17 @@ def main(scr):
         # Returns False if 'q' is pressed
         if not read_keyboard(scr, event_quit, event_man_run, mode, ll):
             break
+
+        if cf.check_for_update():
+            temp = cf.read_conf('r')
+            ll.log("read_conf(): " + str(temp))
+
+            water_dict['conf'] = cf.read_conf('r')
+
+        ll.log("water_dict['conf']: " + str(water_dict['conf']))
+
+
+
         display_head(headder_win, ll, mode[0])
         #if mode[0] == "Water":
         #    display_body(body_win, ll)
@@ -240,6 +280,7 @@ def main(scr):
         body_win.refresh()
         foot_win.refresh()
         
+
         time.sleep(1.1)
 
     # Wait for all threads to complete
@@ -253,10 +294,14 @@ def main(scr):
 
 if __name__ == '__main__':
     try:
+        exit_string = "Quit by user"
         curses.wrapper(main)
+    except Exception as ex:
+        print("Exception in main() loop, trying to continue: " + str(ex))
+        exit_string = "Quit on error"
     finally:
         curses.endwin()
-        print('Quit by user')
+        print(exit_string)
 # if __name__
 
 

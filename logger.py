@@ -8,7 +8,7 @@ class logger:
         self.file_name = file_name
         #log_file = self.file_name + "_" + str(self.today) + ".log"
 
-        l_level = "bob"
+        l_level = ""
         if log_level == "DEBUG":
             l_level = logging.DEBUG
         if log_level == "INFO":
