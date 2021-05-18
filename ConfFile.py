@@ -9,7 +9,7 @@ class ConfFile:
         #self.conf_dict = conf_dict
         self.ll = logger
         self.last_runtimes_updated_time = "lastupdatedatetime"
-        self.counter = 0
+        self.counter = 21
         self.request = Request('http://192.168.1.106/', self.ll)
 
 
@@ -29,18 +29,23 @@ class ConfFile:
     def write_conf(cls, conf_json):
         return 0        
 
+
+    #TODO Have this return [ret_val, man_run], python array with 2 bools
     def check_for_update(cls):
         cls.counter += 1
         cls.ll.log("COUNTER: " + str(cls.counter))
-        ret_val = False
-
-        if cls.counter > 55:
+        ret_val = False 
+ 
+        if cls.counter > 20:
             cls.counter = 0
             try:
                 rta = cls.request.http_get('temp/runtimesaudit/1')
                 rta_json = json.loads(str(rta.text))
-                date_modified =rta_json['date_modified']
+                cls.ll.log("rta_json['date_modified']: " + str(rta_json['date_modified']))
+                cls.ll.log("cls.last_runtimes_updated_time: " + str(cls.last_runtimes_updated_time))
+                date_modified = rta_json['date_modified']
                 if date_modified != cls.last_runtimes_updated_time:
+                    cls.ll.log("cls.last_runtimes_updated_time: " + str(cls.last_runtimes_updated_time))
                     cls.last_runtimes_updated_time = date_modified
                     run_times = cls.request.http_get('temp/runtimes')
                     cls.ll.log("run_times: " + run_times.text)
@@ -53,11 +58,11 @@ class ConfFile:
                             [0, rtt_json[3]['v1'], rtt_json[3]['v2'], rtt_json[3]['v3'], rtt_json[3]['v4'], rtt_json[3]['v5'], rtt_json[3]['v6'], rtt_json[3]['v7']],
                             [0, rtt_json[4]['v1'], rtt_json[4]['v2'], rtt_json[4]['v3'], rtt_json[4]['v4'], rtt_json[4]['v5'], rtt_json[4]['v6'], rtt_json[4]['v7']],
                             [0, rtt_json[5]['v1'], rtt_json[5]['v2'], rtt_json[5]['v3'], rtt_json[5]['v4'], rtt_json[5]['v5'], rtt_json[5]['v6'], rtt_json[5]['v7']],
-                            [0, rtt_json[6]['v1'], rtt_json[6]['v2'], rtt_json[6]['v3'], rtt_json[6]['v4'], rtt_json[6]['v5'], rtt_json[6]['v6'], rtt_json[6]['v7']]#,
-                            #[0, rtt_json[7]['v1'], rtt_json[7]['v2'], rtt_json[7]['v3'], rtt_json[7]['v4'], rtt_json[7]['v5'], rtt_json[7]['v6'], rtt_json[7]['v7']]
+                            [0, rtt_json[6]['v1'], rtt_json[6]['v2'], rtt_json[6]['v3'], rtt_json[6]['v4'], rtt_json[6]['v5'], rtt_json[6]['v6'], rtt_json[6]['v7']],
                         ]
-
+                    man_times1 = [0, rtt_json[7]['v1'], rtt_json[7]['v2'], rtt_json[7]['v3'], rtt_json[7]['v4'], rtt_json[7]['v5'], rtt_json[7]['v6'], rtt_json[7]['v7']]
                     cls.ll.log("run_times1: " + str(run_times1))
+                    cls.ll.log("run_times1: " + str(man_times1))
 
                     #conf_file = cls.read_conf('r')
 
@@ -66,12 +71,19 @@ class ConfFile:
                     conf_json = json.loads(conf_data)
                     conf_file.close()
 
+                    #conf_json['run_times']
+                    #cls.ll.log("conf_json: " + str(conf_json))
+                    conf_json['run_times'] = run_times1
+                    conf_json['man_times'] = man_times1
+                    #cls.ll.log("conf_json: " + str(conf_json))
+                    #cls.ll.log("run_times1: " + str(man_times1))
+
                     conf_file = open("irrigation.conf", 'w')
                     conf_file.write(json.dumps(conf_json))
                     conf_file.close()
 
 
-                    cls.ll.log("run_times1: " + str(run_times1))
+                    #cls.ll.log("run_times1: " + str(run_times1))
                     cls.write_conf(run_times)
                     cls.read_conf('r')
                     ret_val = True

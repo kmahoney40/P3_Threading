@@ -79,13 +79,14 @@ class WaterThread(threading.Thread):
             cls.start_tm = cls.start_time
         else:
             today_times = (cls.run_times[cls.day])[:]
-            #cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
-            cls.run_today = cls.man_times.copy()
-            #cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            
+            cls.run_today = (cls.in_dict["conf"]["man_times"]).copy()# cls.man_times.copy()
+            cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
 
             # do the run min in sec then add in the start time to every element (lambda baby!)
             for v in range(1,8):
-                cls.run_today[v] = cls.run_today[v-1] + cls.man_times[v]
+                cls.run_today[v] = cls.run_today[v-1] + cls.in_dict["conf"]["man_times"][v]
             cls.ll.log("1.6 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
 
             cls.run_today = list(map(lambda v: v * 60, cls.run_today.copy()))
@@ -101,7 +102,7 @@ class WaterThread(threading.Thread):
                 cls.ll.log("in_dict[man_run] 1: " + str(cls.in_dict["man_run"]), "d")
 
         temp_list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        cls.run_today = cls.run_today.copy()#temp_list.copy()
+        #cls.run_today = cls.run_today.copy()#temp_list.copy()
         cls.ll.log("SUM run_today: " + str(cls.run_today))
     # set_run_today
 
@@ -145,6 +146,11 @@ class WaterThread(threading.Thread):
 
             #ret = requests.post('http://192.168.1.140/post1', json={'item': 'WOOT'})
             #cls.ll.log("requests.post: " + r.text, "d")
+
+
+            cls.ll.log("cls.in_dict: " + str(cls.in_dict), "d")
+            cls.ll.log("cls.in_dict[man_times]: " + str(cls.in_dict["conf"]["man_times"]), "d")
+            cls.ll.log("cls.in_dict[run_times]: " + str(cls.in_dict["conf"]["run_times"]), "d")
 
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())

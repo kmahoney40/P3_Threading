@@ -256,6 +256,17 @@ def main(scr):
         # Returns False if 'q' is pressed
         if not read_keyboard(scr, event_quit, event_man_run, mode, ll):
             break
+
+        if cf.check_for_update():
+            temp = cf.read_conf('r')
+            ll.log("read_conf(): " + str(temp))
+
+            water_dict['conf'] = cf.read_conf('r')
+
+        ll.log("water_dict['conf']: " + str(water_dict['conf']))
+
+
+
         display_head(headder_win, ll, mode[0])
         #if mode[0] == "Water":
         #    display_body(body_win, ll)
@@ -269,8 +280,6 @@ def main(scr):
         body_win.refresh()
         foot_win.refresh()
         
-        if cf.check_for_update():
-            water_dict['conf'] = cf.read_conf('r')
 
         time.sleep(1.1)
 
