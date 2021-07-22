@@ -129,6 +129,7 @@ def adj_man_time(inCh, logger):
 def read_keyboard(screen, event_quit, event_man_run, mode, logger):
     ret_val = True
     escapekey = False
+    
     c = screen.getch()
     if escapekey:
         c = 27

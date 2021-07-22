@@ -13,7 +13,7 @@ from Request import Request
 # relay-plate. The shared innput dictionary can be expanded to include weather data that may be used
 # to dynamically modify runtimes.
 class WaterThread(threading.Thread):
-    def __init__(self, threadID, name, logger1, in_dict, e_quit, e_mr):
+    def __init__(self, threadID, name, logger1, in_dict, e_quit, e_man_run):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -22,7 +22,7 @@ class WaterThread(threading.Thread):
         self.ll = logger1
         self.in_dict = in_dict
         self.e_quit = e_quit
-        self.e_mr = e_mr
+        self.e_man_run = e_man_run
         self.pid = self.in_dict['conf']['pid']
         self.relay_board = RelayBoard(self.pid, logger1, e_quit)
         #self.log = logger.logger("WaterThread")
@@ -36,7 +36,6 @@ class WaterThread(threading.Thread):
         self.man_times = in_dict["conf"]["man_times"]
         #self.man_run = in_dict["man_run"]
         self.run_times = in_dict["conf"]["run_times"]
-        self.start_tm = 0
         self.run_today = self.run_times[self.day].copy()
         self.ll.log("in_dict.[start_time]: " + str(in_dict["conf"]["start_time"]))
         self.ll.log("run_today: " + str(self.run_today))
@@ -76,7 +75,6 @@ class WaterThread(threading.Thread):
             cls.run_today = list(map(lambda v: v * 60, cls.run_today))
             cls.ll.log("cls.run_today: " + str(cls.run_today),"d")
             cls.local_start_time = now_in_sec - cls.start_time
-            cls.start_tm = cls.start_time
         else:
             today_times = (cls.run_times[cls.day])[:]
             cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
@@ -91,25 +89,16 @@ class WaterThread(threading.Thread):
 
             cls.run_today = list(map(lambda v: v * 60, cls.run_today.copy()))
 
-            #emr = "false"
-            #if cls.e_mr.is_set():
-            #    emr = "true"
-            #cls.ll.log("man_run: " + str(cls.in_dict["man_run"]) + " event_man_run: " + emr )
-            #if cls.in_dict["man_run"] is not 1:
-            if not cls.e_mr.is_set():
+            if not cls.e_man_run.is_set():
                 cls.local_start_time = now_in_sec
                 cls.start_time = now_in_sec
                 cls.ll.log("in_dict[man_run] 1: " + str(cls.in_dict["man_run"]), "d")
 
         temp_list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        #cls.run_today = cls.run_today.copy()#temp_list.copy()
         cls.ll.log("SUM run_today: " + str(cls.run_today))
     # set_run_today
 
     def run(cls):
-        #now = datetime.now()
-        #cls.mail.send_mail('From WaterThread run()', str(now))
-        #cls.mail.send_mail('from WaterThread ctor', str(now))
         while not cls.e_quit.is_set():
             
             # THIS BLOCK WORKS, inside the if, need to add a get to the runtimes table
@@ -155,10 +144,19 @@ class WaterThread(threading.Thread):
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
             cls.day = datetime.today().weekday()
+            
+            # switch on mode, Water or Manual - maybe do it all in set_runtime() (rename of set_run_today())
+            # think about local_start_time - this is too confusing - BAD name as well, it is not a start time, it a running time
+            # to see if any valves are open. Instead of cls.run_today[0] (with new name) and cls.run_today[7] use cls.start_time
+            # and cls.end_time. r even better a fn that returns valves_on. These will be the 0 and 7 elements in array, but better names.
+            
             cls.set_run_today(now_in_sec)
+            
             cls.local_start_time = now_in_sec - cls.start_time
             cls.in_dict['valve_status'] = 0
             cls.ll.log("cls.run_today[0]: " + str(cls.run_today[0]) + " now_in_sec: " + str(now_in_sec) + " cls.run_today[7]: " + str(cls.run_today[7]), "d")
+            
+            # this loop does not depend on mode Water or Manual
             if cls.run_today[0] < cls.local_start_time < cls.run_today[7]:
                 
                 #if cls.send_mail:
@@ -187,7 +185,8 @@ class WaterThread(threading.Thread):
                 cls.relay_board.set_all_relays(0)
                 cls.ll.log("cls.relay_board.set_all_relays(0) in else")
                 cls.in_dict["man_run"] = 0
-                cls.e_mr.clear()
+                cls.e_man_run.clear()
+                cls.man_mode = 0
             cls.ll.log("WATER THREAD" + " threadID: " + str(cls.threadID))
             cls.e_quit.wait(timeout=5.0)
         # while

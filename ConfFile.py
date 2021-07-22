@@ -35,6 +35,7 @@ class ConfFile:
         cls.counter += 1
         cls.ll.log("COUNTER: " + str(cls.counter))
         ret_val = False 
+        man_run = None
  
         if cls.counter > 20:
             cls.counter = 0
@@ -62,7 +63,9 @@ class ConfFile:
                         ]
                     man_times1 = [0, rtt_json[7]['v1'], rtt_json[7]['v2'], rtt_json[7]['v3'], rtt_json[7]['v4'], rtt_json[7]['v5'], rtt_json[7]['v6'], rtt_json[7]['v7']]
                     cls.ll.log("run_times1: " + str(run_times1))
-                    cls.ll.log("run_times1: " + str(man_times1))
+                    cls.ll.log("man_times1: " + str(man_times1))
+                    man_run = rtt_json[0]['run_manual']
+                    cls.ll.log("run_manual: " + rtt_json[0]['run_manual'])
 
                     #conf_file = cls.read_conf('r')
 
