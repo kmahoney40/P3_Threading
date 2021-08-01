@@ -119,29 +119,33 @@ class WaterThread(threading.Thread):
     # set_run_today
 
     def set_valves(cls, now_in_sec):
-        for valve in range(7):
-            cls.ll.log("^^^^^^^^ : cls.run_today[valve]: " + str(cls.run_today[valve]))
-            cls.ll.log("^^^^^^^^ : now_in_sec" + str(now_in_sec))
-            cls.ll.log("^^^^^^^^ : cls.run_today[valve+1]: " + str(cls.run_today[valve+1]))
-            
-            
-            if cls.run_today[valve] < now_in_sec < cls.run_today[valve+1]:
-                cls.ll.log("valve " + str(valve) + " = ON")
-                cls.in_dict['valve_status'] += 2**valve
-                #sec_remaining = cls.run_today[valve+1] - cls.local_start_time# - now_in_sec
-                sec_remaining = cls.run_today[valve+1] - now_in_sec
-                sec = sec_remaining % 60
+        now_in_range = False
+        if cls.start_run < now_in_sec < cls.end_run:
+            now_in_range = True
+            for valve in range(7):
+                cls.ll.log("^^^^^^^^ : cls.run_today[valve]: " + str(cls.run_today[valve]))
+                cls.ll.log("^^^^^^^^ : now_in_sec" + str(now_in_sec))
+                cls.ll.log("^^^^^^^^ : cls.run_today[valve+1]: " + str(cls.run_today[valve+1]))
+                
+                
+                if cls.run_today[valve] < now_in_sec < cls.run_today[valve+1]:
+                    cls.ll.log("valve " + str(valve) + " = ON")
+                    cls.in_dict['valve_status'] += 2**valve
+                    #sec_remaining = cls.run_today[valve+1] - cls.local_start_time# - now_in_sec
+                    sec_remaining = cls.run_today[valve+1] - now_in_sec
+                    sec = sec_remaining % 60
 
-                remaining_sec = sec_remaining % 60
-                remaining_min = int((sec_remaining - sec) / 60)
-                time_remaining_str = str(remaining_min).zfill(2) + ":" + str(remaining_sec).zfill(2)
-                cls.in_dict["time_remaining"] = time_remaining_str
-                cls.ll.log("++++++++++++++++++++++++++++++ time_remaining str: " + time_remaining_str)
-                cls.ll.log("sec: " + str(sec))
-                #minn = int((sec_remaining - sec) / 60)
-                relay = 2**valve
-                cls.relay_board.set_all_relays(relay)
-        
+                    remaining_sec = sec_remaining % 60
+                    remaining_min = int((sec_remaining - sec) / 60)
+                    time_remaining_str = str(remaining_min).zfill(2) + ":" + str(remaining_sec).zfill(2)
+                    cls.in_dict["time_remaining"] = time_remaining_str
+                    cls.ll.log("++++++++++++++++++++++++++++++ time_remaining str: " + time_remaining_str)
+                    cls.ll.log("sec: " + str(sec))
+                    #minn = int((sec_remaining - sec) / 60)
+                    relay = 2**valve
+                    cls.relay_board.set_all_relays(relay)
+        return now_in_range
+    # set_valves    
 
     def run(cls):
         while not cls.e_quit.is_set():
@@ -172,12 +176,9 @@ class WaterThread(threading.Thread):
             cls.ll.log("@@@@@@@@@@@ cls.run_today[0]: " + str(cls.run_today[0]), "d")
             cls.ll.log("&&&&&&&&&&& cls.run_today[7]: " + str(cls.run_today[7]), "d")
             
-            # this loop does not depend on mode Water or Manual
-            if cls.start_run < now_in_sec < cls.end_run:
-                # If we should be running water, set the valves
-                cls.set_valves(now_in_sec)
-            else:
-                # water mode and outside the run cycle, or man_mode just finished, reset to water mode
+            # set_valves does not depend on mode Water or Manual
+            if not cls.set_valves(now_in_sec):
+                # now_in_sec is outside the min/max run_times, or man_mode just completed - reset to water mode water mode
                 cls.send_mail = True
                 cls.relay_board.set_all_relays(0)
                 cls.ll.log("cls.relay_board.set_all_relays(0) in else")
@@ -185,7 +186,10 @@ class WaterThread(threading.Thread):
                     cls.in_dict["man_mode"] = 0
                     cls.in_dict["man_run"] = 0
                     cls.local_start_time = now_in_sec - cls.start_time
+
             cls.ll.log("WATER THREAD" + " threadID: " + str(cls.threadID))
+
+            # pause loop
             cls.e_quit.wait(timeout=5.0)
         # while
         cls.relay_board.set_all_relays(0)

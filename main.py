@@ -92,14 +92,14 @@ def display_body(win, logger):
 
 def display2_body(win, logger):
     try:
-        logger.log("@@@@@@@@@@@@@@ display2_body: " + str(sys.exc_info()[0]), "d")
+        logger.log("display2_body: " + str(sys.exc_info()[0]), "d")
     except:
         logger.log("Error in display2_body: " + str(sys.exc_info()[0]), "e")
 
 def display_foot(win, logger):
     try:
-        win.addstr(0, 0, str(7), curses.A_UNDERLINE)
-        win.addstr(1, 1, str(8), curses.A_UNDERLINE)
+        win.addstr(0, 0, "Footer line 1", curses.A_UNDERLINE)
+        win.addstr(1, 0, "FooterLine 2", curses.A_UNDERLINE)
     except:
         logger.log("Error in display_foot: " + str(sys.exc_info()[0]))
 # display_foot
@@ -109,8 +109,9 @@ def adj_man_time(inCh, logger):
     
     dt = 1
     idx = 0
-    man = False
-    retVal = (0,0,man)
+    #man = False
+    #retVal = (0,0,man)
+    retVal = (0,0)
 
     logger.log("OUTSIDE adj_man_times inCh: " + str(inCh), "d")
 
@@ -125,24 +126,18 @@ def adj_man_time(inCh, logger):
             dt *= -1
         logger.log("adj_man_times idx and delta: " + str(idx) + " : " + str(dt) + " ; " + str(idx), "d")
         idx = (idx % 7) + 1
-        retVal = (idx,dt,man)
+        #retVal = (idx,dt,man)
+        retVal = (idx,dt)
     return retVal
 # adj_man_time
 
 def read_keyboard(screen, event_quit, event_man_run, mode, logger):
-    ret_val = True
-    escapekey = False
-     
      
     c = screen.getch()
-    if escapekey:
-        c = 27
-        escapekey = False
     if c != curses.ERR:
         if chr(c) == 'q':
             event_quit.set()
             logger.log("Stopped by user - pressed q", "w")
-            ret_val = False
         if chr(c) == 'w':
             mode[0] = "Water"
             water_dict["man_mode"] = 0
@@ -157,24 +152,15 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
                 mode[0] = "Water/Manual"
                 water_dict["man_mode"] = 1
                 logger.log("m pressed: mode = " + str(mode))
-        #if c is 27:
-        #    if mode[0] == "Water/Manual":
-        #        mode[0] = "Water"
-        #        logger.log("m pressed: mode = " + str(mode))
             
         if mode[0] == "Water/Manual":
-            #logger.log("man_mode = " + str(water_dict["man_mode"]))
-            if chr(c) == 'r':# and water_dict["man_mode"] is 1:
+            if chr(c) == 'r':
                 water_dict["man_run"] = 1
                 event_man_run.set()
 
-            idx,delta,man_run = adj_man_time(chr(c), logger)
-            #logger.log("idx,delta = " + str(idx) + "," + str(delta) + "," + str(man_run), "d")
+            idx,delta = adj_man_time(chr(c), logger)
             water_dict['conf']['man_times'][idx] += delta
-            # This is better that the comment block below to keep man_times between 0 and 99 (inclusive)
             water_dict['conf']['man_times'][idx] = max(0, min(water_dict['conf']['man_times'][idx], 99))
-
-    return ret_val
 # read_keyboard
 
 def main(scr):
@@ -202,8 +188,6 @@ def main(scr):
 
     foot_win = curses.newwin(foot_height, foot_width, foot_begin_y, foot_begin_x)
 
-    escapekey = False
-
     ll = logger.logger("water", water_dict['conf']['log_level'])    
 
     test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
@@ -211,8 +195,6 @@ def main(scr):
     test_dict = cf.read_conf('r')
 
     water_dict['conf'] = test_dict
-#todo make ll file scope with LogLever = 'DEBUG' then reset log level after call to ConfFile.read_conf()
-    #ll = logger.logger("water", water_dict['conf']['log_level'])    
 
     ll.log("setup - water_dict['valve_status']: " + str(water_dict['valve_status']))
     ll.log("setup - water_dict['conf']: " + str(water_dict['conf']))
@@ -226,12 +208,10 @@ def main(scr):
             rt[d] += str(water_dict["conf"]["run_times"][d][t])
         ll.log("setup - run_times[]: " + rt[d])
 
-
-    # todo Use Dictionary quit:, t1: or water_event, t2 or temp_event
+    # set when operator presses 'q'
     event_quit = threading.Event()
     event_man_run = threading.Event()
-    #water_events = [event_quit, event_man_run]
-    #temp_events = [event_quit, event_temp_update]
+
     # Create new threads
     threads = []
     thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, e_mode)
@@ -252,13 +232,11 @@ def main(scr):
     now = datetime.now()
     mail.send_mail('from WaterThread ctor', str(now))
    
-    #id = 0
     keep_going = True
-    while keep_going:
+
+    while not event_quit.is_set():
         
-        # Returns False if 'q' is pressed
-        if not read_keyboard(scr, event_quit, event_man_run, mode, ll):
-            break
+        read_keyboard(scr, event_quit, event_man_run, mode, ll)
 
         if cf.check_for_update():
             temp = cf.read_conf('r')
