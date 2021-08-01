@@ -2,6 +2,7 @@ import threading
 import time
 #import request
 from datetime import datetime
+import enum
 from relay_board import RelayBoard
 import logger
 import json
@@ -17,15 +18,12 @@ class WaterThread(threading.Thread):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
-        #self.ll = logger.logger("water")
-        #self.ll = logger.logger("WaterThread")
         self.ll = logger1
         self.in_dict = in_dict
         self.e_quit = e_quit
         self.e_man_run = e_man_run
         self.pid = self.in_dict['conf']['pid']
         self.relay_board = RelayBoard(self.pid, logger1, e_quit)
-        #self.log = logger.logger("WaterThread")
         self.request = Request('http://192.168.1.106/', logger1)
         self.last_update = 'lastupdate'
 
@@ -34,9 +32,11 @@ class WaterThread(threading.Thread):
         self.day = datetime.today().weekday()
         self.man_mode = in_dict["man_mode"]
         self.man_times = in_dict["conf"]["man_times"]
-        #self.man_run = in_dict["man_run"]
+        self.man_run = in_dict["man_run"]
         self.run_times = in_dict["conf"]["run_times"]
         self.run_today = self.run_times[self.day].copy()
+        self.start_run = 0
+        self.end_run = 0
         self.ll.log("in_dict.[start_time]: " + str(in_dict["conf"]["start_time"]))
         self.ll.log("run_today: " + str(self.run_today))
 
@@ -65,77 +65,90 @@ class WaterThread(threading.Thread):
         # The days of the week Mon = 0, Tue = 1...
         cls.day = datetime.today().weekday()
 
+        # not manual 
         if cls.in_dict["man_mode"] is 0:
             today_times = cls.run_times[cls.day].copy()
             cls.run_today = cls.run_times[cls.day].copy()
             
+            #KMDB do this as a single lambda?
             for v in range(1,8):
                 cls.run_today[v] = cls.run_today[v-1] + today_times[v]
-
-            cls.run_today = list(map(lambda v: v * 60, cls.run_today))
-            cls.ll.log("cls.run_today: " + str(cls.run_today),"d")
+            #cls.run_today = list(map(lambda v: v * 60, cls.run_today))
+            cls.run_today = list(map(lambda v: v * 60 + cls.start_time, cls.run_today))
+            
+            cls.start_run = cls.start_time 
+            #cls.end_run = cls.start_run + cls.run_today[7]
+            cls.end_run = cls.run_today[7]
+            
+            cls.ll.log("------------------------- cls.run_today: " + str(cls.run_today),"d")
+            cls.ll.log("------------------------- cls.start_run: " + str(cls.start_run),"d")
+            cls.ll.log("------------------------- cls.end_run: " + str(cls.end_run),"d")
             cls.local_start_time = now_in_sec - cls.start_time
         else:
-            today_times = (cls.run_times[cls.day])[:]
-            cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+            cls.ll.log("0.2 ----------- cls.in_dict['man_run']: " + str(cls.in_dict["man_run"]))
+                        
+            if cls.in_dict["man_run"] is 0:
+                #today_times = (cls.run_times[cls.day])[:]
+                cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
             
-            cls.run_today = (cls.in_dict["conf"]["man_times"]).copy()# cls.man_times.copy()
-            cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+                cls.run_today = (cls.in_dict["conf"]["man_times"]).copy()# cls.man_times.copy()
+                cls.ll.log("1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
+                
+                for v in range(1,8):
+                    #cls.run_today[v] = cls.run_today[v-1] + cls.in_dict["conf"]["man_times"][v]
+                    cls.run_today[v] = cls.run_today[v-1] + cls.in_dict["conf"]["man_times"][v]
+                cls.ll.log("1.6 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
 
-            # do the run min in sec then add in the start time to every element (lambda baby!)
-            for v in range(1,8):
-                cls.run_today[v] = cls.run_today[v-1] + cls.in_dict["conf"]["man_times"][v]
-            cls.ll.log("1.6 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
-
-            cls.run_today = list(map(lambda v: v * 60, cls.run_today.copy()))
-
-            if not cls.e_man_run.is_set():
+                # Mult by 60 to get seconds and add now_in_sec KMDB bad doubel add of now_in_sec
+                cls.run_today = list(map(lambda v: v * 60 + now_in_sec, cls.run_today.copy()))
+                cls.ll.log("1.7 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
+                
                 cls.local_start_time = now_in_sec
-                cls.start_time = now_in_sec
-                cls.ll.log("in_dict[man_run] 1: " + str(cls.in_dict["man_run"]), "d")
+                
+                cls.start_run = now_in_sec 
 
-        temp_list = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+                # now_in_seconds added in cls.run_today
+                cls.end_run = cls.run_today[7]
+                
+                cls.ll.log("cls.man_run: ", "d")
+            elif cls.end_run < now_in_sec:
+                cls.in_dict["man_run"] = 0
+                cls.in_dict["man_mode"] = 0
+
         cls.ll.log("SUM run_today: " + str(cls.run_today))
     # set_run_today
 
+    def set_valves(cls, now_in_sec):
+        for valve in range(7):
+            cls.ll.log("^^^^^^^^ : cls.run_today[valve]: " + str(cls.run_today[valve]))
+            cls.ll.log("^^^^^^^^ : now_in_sec" + str(now_in_sec))
+            cls.ll.log("^^^^^^^^ : cls.run_today[valve+1]: " + str(cls.run_today[valve+1]))
+            
+            
+            if cls.run_today[valve] < now_in_sec < cls.run_today[valve+1]:
+                cls.ll.log("valve " + str(valve) + " = ON")
+                cls.in_dict['valve_status'] += 2**valve
+                #sec_remaining = cls.run_today[valve+1] - cls.local_start_time# - now_in_sec
+                sec_remaining = cls.run_today[valve+1] - now_in_sec
+                sec = sec_remaining % 60
+
+                remaining_sec = sec_remaining % 60
+                remaining_min = int((sec_remaining - sec) / 60)
+                time_remaining_str = str(remaining_min).zfill(2) + ":" + str(remaining_sec).zfill(2)
+                cls.in_dict["time_remaining"] = time_remaining_str
+                cls.ll.log("++++++++++++++++++++++++++++++ time_remaining str: " + time_remaining_str)
+                cls.ll.log("sec: " + str(sec))
+                #minn = int((sec_remaining - sec) / 60)
+                relay = 2**valve
+                cls.relay_board.set_all_relays(relay)
+        
+
     def run(cls):
         while not cls.e_quit.is_set():
-            
-            # THIS BLOCK WORKS, inside the if, need to add a get to the runtimes table
-            # and then update the config file and reload into memory.  Maybe move this to main.py.
-            #r = cls.request.http_get('temp/runtimesaudit/1')
-            #r = cls.Request(temp/runtimesaudit/1)
-            #s = str(r.text)
-            #j = json.loads(s)
-            #d = j['date_modified']
-            #if d != cls.last_update:
-            #    cls.last_update = d
-            #    cls.ll.log("Updated last_update to: " + d, "d")
-            #    cls.ll.log("Updated last_update to: " + d, "d")
-            #    cls.ll.log("Updated last_update to: " + d, "d")
-            #    cls.ll.log("Updated last_update to: " + d, "d")
-                
-            
-            #cls.ll.log("Request(temp/runtimesaudit/1)): " + str(j['date_modified']), "d")
-            #try:
-            #    ret = request.get('polls/pi')
-            #   cls.ll.log("requests.get.json(): " + str(ret.text), "d")
-            #except Exception as ex:
-            #    cls.ll.log("Exception: " + str(ex), 'e')
-            #url = 'http://192.168.1.106/water/temp/save'
-            #client = requests.session()
-            #client.get(url)
-            #csrftoken = client.cookies['csrftoken']
 
-            # DELETE needs trailing / in url, get does not.
-
-            #my_data = {login:"somepersonsname", password:"supergreatpassword", csrfmiddlewaretoken:csrftoken}
-            
-            #r = requests.post('http://192.168.1.106/water/temp/save') 
-
-            #ret = requests.post('http://192.168.1.140/post1', json={'item': 'WOOT'})
-            #cls.ll.log("requests.post: " + r.text, "d")
-
+            cls.ll.log("KMDB ++++++++++++++++ in_dict[man_mode]: " + str(cls.in_dict["man_mode"]), "d")
+            cls.ll.log("KMDB ++++++++++++++++  in_dict[man_run]: " + str(cls.in_dict["man_run"]), "d")
+            cls.ll.log("KMDB ****************       cls.man_run: " + str(cls.man_run), "d")
 
             cls.ll.log("cls.in_dict: " + str(cls.in_dict), "d")
             cls.ll.log("cls.in_dict[man_times]: " + str(cls.in_dict["conf"]["man_times"]), "d")
@@ -145,48 +158,33 @@ class WaterThread(threading.Thread):
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
             cls.day = datetime.today().weekday()
             
-            # switch on mode, Water or Manual - maybe do it all in set_runtime() (rename of set_run_today())
-            # think about local_start_time - this is too confusing - BAD name as well, it is not a start time, it a running time
-            # to see if any valves are open. Instead of cls.run_today[0] (with new name) and cls.run_today[7] use cls.start_time
-            # and cls.end_time. r even better a fn that returns valves_on. These will be the 0 and 7 elements in array, but better names.
-            
+            # Set the current run times, todays times or the manual times
             cls.set_run_today(now_in_sec)
             
             cls.local_start_time = now_in_sec - cls.start_time
             cls.in_dict['valve_status'] = 0
             cls.ll.log("cls.run_today[0]: " + str(cls.run_today[0]) + " now_in_sec: " + str(now_in_sec) + " cls.run_today[7]: " + str(cls.run_today[7]), "d")
+
+            cls.ll.log("cls.run_today[0] < now_in_sec < cls.run_today[7]", "d")
+            cls.ll.log("@@@@@@@@@@@ cls.start_run: " + str(cls.start_run), "d")
+            cls.ll.log("&&&&&&&&&&& cls.end_run: " + str(cls.end_run), "d")
+            cls.ll.log("$$$$$$$$$$$ now_in_sec: " + str(now_in_sec), "d")
+            cls.ll.log("@@@@@@@@@@@ cls.run_today[0]: " + str(cls.run_today[0]), "d")
+            cls.ll.log("&&&&&&&&&&& cls.run_today[7]: " + str(cls.run_today[7]), "d")
             
             # this loop does not depend on mode Water or Manual
-            if cls.run_today[0] < cls.local_start_time < cls.run_today[7]:
-                
-                #if cls.send_mail:
-                #    cls.mail.send_mail('From WaterThread run()', str(now))
-                #    cls.send_mail = False
-                
-                cls.ll.log("cls.run_today[0] < now_in_sec < cls.run_today[7]", "d")
-                for v in range(7):
-                    if cls.run_today[v] < cls.local_start_time < cls.run_today[v+1]:
-                        cls.ll.log("valve " + str(v) + " = ON")
-                        cls.in_dict['valve_status'] += 2**v
-                        sec_remaining = cls.run_today[v+1] - cls.local_start_time# - now_in_sec
-                        sec = sec_remaining % 60
-
-                        remaining_sec = sec_remaining % 60
-                        remaining_min = int((sec_remaining - sec) / 60)
-                        time_remaining_str = str(remaining_min).zfill(2) + ":" + str(remaining_sec).zfill(2)
-                        cls.in_dict["time_remaining"] = time_remaining_str
-                        cls.ll.log("time_remaining str: " + time_remaining_str)
-                        cls.ll.log("sec: " + str(sec))
-                        #minn = int((sec_remaining - sec) / 60)
-                        relay = 2**v
-                        cls.relay_board.set_all_relays(relay)
+            if cls.start_run < now_in_sec < cls.end_run:
+                # If we should be running water, set the valves
+                cls.set_valves(now_in_sec)
             else:
+                # water mode and outside the run cycle, or man_mode just finished, reset to water mode
                 cls.send_mail = True
                 cls.relay_board.set_all_relays(0)
                 cls.ll.log("cls.relay_board.set_all_relays(0) in else")
-                cls.in_dict["man_run"] = 0
-                cls.e_man_run.clear()
-                cls.man_mode = 0
+                if cls.in_dict["man_mode"] is 1 and  now_in_sec > cls.end_run:
+                    cls.in_dict["man_mode"] = 0
+                    cls.in_dict["man_run"] = 0
+                    cls.local_start_time = now_in_sec - cls.start_time
             cls.ll.log("WATER THREAD" + " threadID: " + str(cls.threadID))
             cls.e_quit.wait(timeout=5.0)
         # while
