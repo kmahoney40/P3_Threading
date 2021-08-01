@@ -104,13 +104,10 @@ def display_foot(win, logger):
         logger.log("Error in display_foot: " + str(sys.exc_info()[0]))
 # display_foot
 
-#KMDB remove man from retVal
 def adj_man_time(inCh, logger):
     
     dt = 1
     idx = 0
-    #man = False
-    #retVal = (0,0,man)
     retVal = (0,0)
 
     logger.log("OUTSIDE adj_man_times inCh: " + str(inCh), "d")
@@ -126,7 +123,7 @@ def adj_man_time(inCh, logger):
             dt *= -1
         logger.log("adj_man_times idx and delta: " + str(idx) + " : " + str(dt) + " ; " + str(idx), "d")
         idx = (idx % 7) + 1
-        #retVal = (idx,dt,man)
+
         retVal = (idx,dt)
     return retVal
 # adj_man_time
@@ -142,7 +139,9 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
             mode[0] = "Water"
             water_dict["man_mode"] = 0
             event_man_run.clear()
-            water_dict["man_run"] = 0
+            
+            #water_dict["man_run"] = 0
+            
             logger.log("w pressed: mode = " + str(mode))
         if chr(c) == 't':
             mode[0] = "Temp"
@@ -155,7 +154,9 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
             
         if mode[0] == "Water/Manual":
             if chr(c) == 'r':
-                water_dict["man_run"] = 1
+                
+                #water_dict["man_run"] = 1
+                
                 event_man_run.set()
 
             idx,delta = adj_man_time(chr(c), logger)
@@ -214,7 +215,7 @@ def main(scr):
 
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, e_mode)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, event_man_run)
     thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
     #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
     
