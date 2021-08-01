@@ -1,3 +1,4 @@
+
 import threading
 from datetime import datetime
 import time
@@ -37,6 +38,7 @@ water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining":
 daqc_dict = [0,0,0,0,0,0,0,0]
 days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
+e_mode = ""
 #man_run = False
 run_times = ["", "", "", "", "", "", ""]
 disp_run_times = []
@@ -102,6 +104,7 @@ def display_foot(win, logger):
         logger.log("Error in display_foot: " + str(sys.exc_info()[0]))
 # display_foot
 
+#KMDB remove man from retVal
 def adj_man_time(inCh, logger):
     
     dt = 1
@@ -129,6 +132,8 @@ def adj_man_time(inCh, logger):
 def read_keyboard(screen, event_quit, event_man_run, mode, logger):
     ret_val = True
     escapekey = False
+     
+     
     c = screen.getch()
     if escapekey:
         c = 27
@@ -141,7 +146,8 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
         if chr(c) == 'w':
             mode[0] = "Water"
             water_dict["man_mode"] = 0
-            #water_dict["man_run"] = 0
+            event_man_run.clear()
+            water_dict["man_run"] = 0
             logger.log("w pressed: mode = " + str(mode))
         if chr(c) == 't':
             mode[0] = "Temp"
@@ -151,14 +157,14 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
                 mode[0] = "Water/Manual"
                 water_dict["man_mode"] = 1
                 logger.log("m pressed: mode = " + str(mode))
-        if c is 27:
-            if mode[0] == "Water/Manual":
-                mode[0] = "Water"
-                logger.log("m pressed: mode = " + str(mode))
+        #if c is 27:
+        #    if mode[0] == "Water/Manual":
+        #        mode[0] = "Water"
+        #        logger.log("m pressed: mode = " + str(mode))
             
         if mode[0] == "Water/Manual":
             #logger.log("man_mode = " + str(water_dict["man_mode"]))
-            if chr(c) == 'r' and water_dict["man_mode"] is 1:
+            if chr(c) == 'r':# and water_dict["man_mode"] is 1:
                 water_dict["man_run"] = 1
                 event_man_run.set()
 
@@ -167,11 +173,7 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
             water_dict['conf']['man_times'][idx] += delta
             # This is better that the comment block below to keep man_times between 0 and 99 (inclusive)
             water_dict['conf']['man_times'][idx] = max(0, min(water_dict['conf']['man_times'][idx], 99))
-            # Save this block            
-            #if water_dict['conf']['man_times'][idx] > 99:
-            #    water_dict['conf']['man_times'][idx] = 99
-            #if water_dict['conf']['man_times'][idx] < 0:
-            #    water_dict['conf']['man_times'][idx] = 0
+
     return ret_val
 # read_keyboard
 
@@ -232,7 +234,7 @@ def main(scr):
     #temp_events = [event_quit, event_temp_update]
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, event_man_run)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, e_mode)
     thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
     #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
     
@@ -253,6 +255,7 @@ def main(scr):
     #id = 0
     keep_going = True
     while keep_going:
+        
         # Returns False if 'q' is pressed
         if not read_keyboard(scr, event_quit, event_man_run, mode, ll):
             break
@@ -263,9 +266,11 @@ def main(scr):
 
             water_dict['conf'] = cf.read_conf('r')
 
+        ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " $$$$$$")
+        if water_dict["man_mode"] is 0:
+            mode[0] = "Water"
+        ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " #####")
         ll.log("water_dict['conf']: " + str(water_dict['conf']))
-
-
 
         display_head(headder_win, ll, mode[0])
         #if mode[0] == "Water":
