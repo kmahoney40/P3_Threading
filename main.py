@@ -106,26 +106,26 @@ def display_foot(win, logger):
 
 def adj_man_time(inCh, logger):
     
-    dt = 1
+    d_time = 1
     idx = 0
-    retVal = (0,0)
+    ret_tuple = (0,0)
 
     logger.log("OUTSIDE adj_man_times inCh: " + str(inCh), "d")
 
-    lst = ['a','s','d','f','g','h','j','A','S','D','F','G','H','J','z','x','c','v','b','n','m','Z','X','C','V','B','N','M']
-    if inCh in lst:
+    valid_key_press = ['a','s','d','f','g','h','j','A','S','D','F','G','H','J','z','x','c','v','b','n','m','Z','X','C','V','B','N','M']
+    if inCh in valid_key_press:
         logger.log("INSIDE adj_man_times inCh: " + str(inCh), "d")
-        # idx is for a list and we want to skip the 1st element
-        idx = lst.index(inCh)
+        # idx is for a list and we want to skip the 1st element, as the frist element of run_times is not actually a ru time
+        idx = valid_key_press.index(inCh)
         if inCh.isupper():
-            dt = 5
+            d_time = 5
         if idx > 13:
-            dt *= -1
-        logger.log("adj_man_times idx and delta: " + str(idx) + " : " + str(dt) + " ; " + str(idx), "d")
+            d_time *= -1
+        logger.log("adj_man_times idx and delta: " + str(idx) + " : " + str(d_time) + " ; " + str(idx), "d")
         idx = (idx % 7) + 1
 
-        retVal = (idx,dt)
-    return retVal
+        ret_tuple = (idx,d_time)
+    return ret_tuple
 # adj_man_time
 
 def read_keyboard(screen, event_quit, event_man_run, mode, logger):
@@ -140,8 +140,6 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
             water_dict["man_mode"] = 0
             event_man_run.clear()
             
-            #water_dict["man_run"] = 0
-            
             logger.log("w pressed: mode = " + str(mode))
         if chr(c) == 't':
             mode[0] = "Temp"
@@ -154,9 +152,6 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
             
         if mode[0] == "Water/Manual":
             if chr(c) == 'r':
-                
-                #water_dict["man_run"] = 1
-                
                 event_man_run.set()
 
             idx,delta = adj_man_time(chr(c), logger)
@@ -177,7 +172,7 @@ def main(scr):
     headder_height = 2; headder_width = 80
 
     body_begin_x = headder_begin_x; body_begin_y = headder_begin_y + headder_height
-    body_height = 27; body_width = headder_width
+    body_height = 26; body_width = headder_width
 
     foot_begin_x = body_begin_x; foot_begin_y = body_begin_y + body_height
     foot_height = 2; foot_width = headder_width
@@ -196,6 +191,11 @@ def main(scr):
     test_dict = cf.read_conf('r')
 
     water_dict['conf'] = test_dict
+
+    # We use the logger in ConfFile with the defualt value 'DEBUG' after loading the conf 
+    # file set the log_level to the level in the config file.
+    ll.update_log_level(water_dict['conf']['log_level'])   
+
 
     ll.log("setup - water_dict['valve_status']: " + str(water_dict['valve_status']))
     ll.log("setup - water_dict['conf']: " + str(water_dict['conf']))
@@ -245,7 +245,7 @@ def main(scr):
 
             water_dict['conf'] = cf.read_conf('r')
 
-        ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " $$$$$$")
+        ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " $$$$$$", "i")
         if water_dict["man_mode"] is 0:
             mode[0] = "Water"
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " #####")
@@ -259,7 +259,6 @@ def main(scr):
         display_foot(foot_win, ll)
         display_body(body_win, ll)
         
-        #id += 1
         headder_win.refresh()
         body_win.refresh()
         foot_win.refresh()
@@ -287,5 +286,3 @@ if __name__ == '__main__':
         curses.endwin()
         print(exit_string)
 # if __name__
-
-

@@ -14,17 +14,17 @@ from Request import Request
 # relay-plate. The shared innput dictionary can be expanded to include weather data that may be used
 # to dynamically modify runtimes.
 class WaterThread(threading.Thread):
-    def __init__(self, threadID, name, logger1, in_dict, e_quit, e_man_run):
+    def __init__(self, threadID, name, logger, in_dict, e_quit, e_man_run):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
-        self.ll = logger1
+        self.ll = logger
         self.in_dict = in_dict
         self.e_quit = e_quit
         self.e_man_run = e_man_run
         self.pid = self.in_dict['conf']['pid']
-        self.relay_board = RelayBoard(self.pid, logger1, e_quit)
-        self.request = Request('http://192.168.1.106/', logger1)
+        self.relay_board = RelayBoard(self.pid, logger, e_quit)
+        self.request = Request('http://192.168.1.106/', logger)
         self.last_update = 'lastupdate'
 
         # The days of the week Mon = 0, Tue = 1...
@@ -75,10 +75,9 @@ class WaterThread(threading.Thread):
             today_times = cls.run_times[cls.day].copy()
             cls.run_today = cls.run_times[cls.day].copy()
             
-            #KMDB do this as a single lambda?
             for v in range(1,8):
                 cls.run_today[v] = cls.run_today[v-1] + today_times[v]
-            #cls.run_today = list(map(lambda v: v * 60, cls.run_today))
+            # Convert to seconds
             cls.run_today = list(map(lambda v: v * 60 + cls.start_time, cls.run_today))
             
             cls.start_run = cls.start_time 
