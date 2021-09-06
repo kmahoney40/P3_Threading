@@ -1,4 +1,3 @@
-
 import threading
 from datetime import datetime
 import time
@@ -159,6 +158,7 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
             water_dict['conf']['man_times'][idx] = max(0, min(water_dict['conf']['man_times'][idx], 99))
 # read_keyboard
 
+    
 def main(scr):
 
     scr = curses.initscr()
@@ -186,8 +186,13 @@ def main(scr):
 
     ll = logger.logger("water", water_dict['conf']['log_level'])    
 
+    # set when operator presses 'q'
+    event_quit = threading.Event()
+    event_reload = threading.Event()
+    event_man_run = threading.Event()
+
     test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
-    cf = ConfFile.ConfFile(test_dict['conf'], ll)
+    cf = ConfFile.ConfFile(test_dict['conf'], ll, event_quit)
     test_dict = cf.read_conf('r')
 
     water_dict['conf'] = test_dict
@@ -209,10 +214,6 @@ def main(scr):
             rt[d] += str(water_dict["conf"]["run_times"][d][t])
         ll.log("setup - run_times[]: " + rt[d])
 
-    # set when operator presses 'q'
-    event_quit = threading.Event()
-    event_man_run = threading.Event()
-
     # Create new threads
     threads = []
     thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, event_man_run)
@@ -233,17 +234,18 @@ def main(scr):
     now = datetime.now()
     mail.send_mail('from WaterThread ctor', str(now))
    
-    keep_going = True
-
     while not event_quit.is_set():
         
         read_keyboard(scr, event_quit, event_man_run, mode, ll)
 
-        if cf.check_for_update():
-            temp = cf.read_conf('r')
-            ll.log("read_conf(): " + str(temp))
+        if cf.check_for_update(water_dict['conf']):
+            #event_quit.set()
+            test_dict = cf.read_conf('r')
+            water_dict['conf'] = test_dict
 
-            water_dict['conf'] = cf.read_conf('r')
+            #temp = cf.read_conf('r')
+            #ll.log("read_conf(): " + str(temp))
+            #water_dict['conf'] = cf.read_conf('r')
 
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " $$$$$$", "i")
         if water_dict["man_mode"] is 0:
@@ -262,7 +264,6 @@ def main(scr):
         headder_win.refresh()
         body_win.refresh()
         foot_win.refresh()
-        
 
         time.sleep(1.1)
 
@@ -277,7 +278,7 @@ def main(scr):
 
 if __name__ == '__main__':
     try:
-        exit_string = "Quit by user"
+        exit_string = "Quit by user or to reload conf file"
         curses.wrapper(main)
     except Exception as ex:
         print("Exception in main() loop, trying to continue: " + str(ex))
