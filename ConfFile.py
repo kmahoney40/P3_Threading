@@ -4,19 +4,11 @@ from Request import Request
 
 class ConfFile:
     def __init__(self, conf_dict, logger, e_quit):
-        #self.conf_file
-        #open("irrigation.conf", "r")
-        #self.conf_dict = conf_dict
         self.e_quit = e_quit
         self.ll = logger
         self.last_runtimes_updated_time = "lastupdatedatetime"
         self.counter = 21
         self.request = Request('http://192.168.1.106/', self.ll)
-
-
-        #conf_data = self.conf_file.read()
-        #conf_json = json.loads(conf_data)
-        #self.ll.log("TEST DICT: woot!!!!!!!!!!!: " + str(conf_dict), 'd')
 
     def read_conf(cls, mode):
         conf_file = open("irrigation.conf", mode)
@@ -45,7 +37,6 @@ class ConfFile:
             cls.counter = 0
             try:
                 rta = cls.request.http_get('temp/runtimesaudit/1')
-                #cls.e_quit.set()
                 rta_json = json.loads(str(rta.text))
                 cls.ll.log("rta_json['date_modified']: " + str(rta_json['date_modified']))
                 cls.ll.log("cls.last_runtimes_updated_time: " + str(cls.last_runtimes_updated_time))
@@ -54,7 +45,6 @@ class ConfFile:
                     cls.ll.log("cls.last_runtimes_updated_time: " + str(cls.last_runtimes_updated_time))
                     cls.last_runtimes_updated_time = date_modified
                     run_times = cls.request.http_get('temp/runtimes')
-                    #cls.ll.log("run_times: " + run_times.text)
                     rtt_json = json.loads(run_times.text)
                     cls.ll.log("rtt_json: " + str(rtt_json))
                     run_times1 = [
@@ -66,40 +56,19 @@ class ConfFile:
                             [0, rtt_json[5]['v1'], rtt_json[5]['v2'], rtt_json[5]['v3'], rtt_json[5]['v4'], rtt_json[5]['v5'], rtt_json[5]['v6'], rtt_json[5]['v7']],
                             [0, rtt_json[6]['v1'], rtt_json[6]['v2'], rtt_json[6]['v3'], rtt_json[6]['v4'], rtt_json[6]['v5'], rtt_json[6]['v6'], rtt_json[6]['v7']],
                         ]
-                    #man_times1 = [0, rtt_json[7]['v1'], rtt_json[7]['v2'], rtt_json[7]['v3'], rtt_json[7]['v4'], rtt_json[7]['v5'], rtt_json[7]['v6'], rtt_json[7]['v7']]
-                    cls.ll.log("run_times1: " + str(run_times1))
-                    #cls.ll.log("man_times1: " + str(man_times1))
-                    #man_run = rtt_json[0]['run_manual']
-                    #cls.ll.log("run_manual: " + rtt_json[0]['run_manual'])
 
-                    #conf_file = cls.read_conf('r')
+                    cls.ll.log("run_times1: " + str(run_times1))
                     conf_data = ''
                     with open('irrigation.conf', 'r') as fp:
                         conf_data = fp.read()
-                    #conf_json = json.loads(conf_data)
-                    #conf_file = open("irrigation.conf", 'r')
-                    #conf_data = conf_file.read()
-                    conf_json = json.loads(conf_data)
-                    #conf_file.close()
 
-                    #conf_json['run_times']
-                    #cls.ll.log("conf_json: " + str(conf_json))
+                    conf_json = json.loads(conf_data)
                     conf_json['run_times'] = run_times1
-                    #conf_json['man_times'] = man_times1
-                    #cls.ll.log("conf_json: " + str(conf_json))
-                    #cls.ll.log("run_times1: " + str(man_times1))
                     cls.ll.log("conf_json-conf_json: " + str(conf_json))
 
-                    #conf_file = open("irrigation2.conf", 'w')
-                    #conf_file.write(conf_file)
-                    #conf_file.close()
                     with open('irrigation.conf', 'w') as fp:
                         json.dump(conf_json, fp)
  
-
-                    #cls.ll.log("run_times1: " + str(run_times1))
-                    #cls.write_conf(run_times)
-                    #cls.read_conf('r')
                     ret_val = True
             except Exception as ex:
                 cls.ll.log("Exception: " + str(ex), 'e')

@@ -201,12 +201,6 @@ def main(scr):
     # file set the log_level to the level in the config file.
     ll.update_log_level(water_dict['conf']['log_level'])   
 
-
-    ll.log("setup - water_dict['valve_status']: " + str(water_dict['valve_status']))
-    ll.log("setup - water_dict['conf']: " + str(water_dict['conf']))
-    ll.log("setup - water_dict['conf']['start_time']: " + str(water_dict['conf']['start_time']))
-    ll.log("setup - water_dict['conf']['pid']: " + str(water_dict['conf']['pid']))
-
     rt = ["","","","","","","",""]
     for d in range(7):
         run_times[d] = str(water_dict["conf"]["run_times"][d])
@@ -239,13 +233,8 @@ def main(scr):
         read_keyboard(scr, event_quit, event_man_run, mode, ll)
 
         if cf.check_for_update(water_dict['conf']):
-            #event_quit.set()
             test_dict = cf.read_conf('r')
             water_dict['conf'] = test_dict
-
-            #temp = cf.read_conf('r')
-            #ll.log("read_conf(): " + str(temp))
-            #water_dict['conf'] = cf.read_conf('r')
 
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " $$$$$$", "i")
         if water_dict["man_mode"] is 0:
@@ -254,10 +243,6 @@ def main(scr):
         ll.log("water_dict['conf']: " + str(water_dict['conf']))
 
         display_head(headder_win, ll, mode[0])
-        #if mode[0] == "Water":
-        #    display_body(body_win, ll)
-        #else:
-        #    display2_body(temp_body_win, ll)
         display_foot(foot_win, ll)
         display_body(body_win, ll)
         

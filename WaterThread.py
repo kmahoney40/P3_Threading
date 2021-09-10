@@ -65,11 +65,6 @@ class WaterThread(threading.Thread):
         # The days of the week Mon = 0, Tue = 1...
         cls.day = datetime.today().weekday()
 
-        if cls.e_man_run.is_set():
-            cls.ll.log("@@@@@@@@@@@@ cls.e_man_run     SET: @@@@@@@@@@@@@@@@@@@@")
-        else:
-            cls.ll.log("@@@@@@@@@@@@ cls.e_man_run NOT SET: @@@@@@@@@@@@@@@@@@@@")
-
         # not manual 
         if cls.in_dict["man_mode"] is 0:
             today_times = cls.run_times[cls.day].copy()
@@ -83,14 +78,11 @@ class WaterThread(threading.Thread):
             cls.start_run = cls.start_time 
             cls.end_run = cls.run_today[7]
             
-            cls.ll.log("------------------------- cls.run_today: " + str(cls.run_today),"d")
-            cls.ll.log("------------------------- cls.start_run: " + str(cls.start_run),"d")
-            cls.ll.log("------------------------- cls.end_run: " + str(cls.end_run),"d")
+            cls.ll.log("cls.run_today: " + str(cls.run_today),"d")
+            cls.ll.log("cls.start_run: " + str(cls.start_run),"d")
+            cls.ll.log("cls.end_run: " + str(cls.end_run),"d")
             cls.local_start_time = now_in_sec - cls.start_time
         else:
-            cls.ll.log("0.2 ----------- cls.in_dict['man_run']: " + str(cls.in_dict["man_run"]))
-
-            #if cls.in_dict["man_run"] is 0:
             if not cls.e_man_run.is_set():
                 cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
             
@@ -126,10 +118,6 @@ class WaterThread(threading.Thread):
         if cls.start_run < now_in_sec < cls.end_run:
             now_in_range = True
             for valve in range(7):
-                cls.ll.log("^^^^^^^^ : cls.run_today[valve]: " + str(cls.run_today[valve]))
-                cls.ll.log("^^^^^^^^ : now_in_sec" + str(now_in_sec))
-                cls.ll.log("^^^^^^^^ : cls.run_today[valve+1]: " + str(cls.run_today[valve+1]))
-                
                 if cls.run_today[valve] < now_in_sec < cls.run_today[valve+1]:
                     cls.ll.log("valve " + str(valve) + " = ON")
                     cls.in_dict['valve_status'] += 2**valve
@@ -140,8 +128,6 @@ class WaterThread(threading.Thread):
                     remaining_min = int((sec_remaining - sec) / 60)
                     time_remaining_str = str(remaining_min).zfill(2) + ":" + str(remaining_sec).zfill(2)
                     cls.in_dict["time_remaining"] = time_remaining_str
-                    cls.ll.log("++++++++++++++++++++++++++++++ time_remaining str: " + time_remaining_str)
-                    cls.ll.log("sec: " + str(sec))
                     relay = 2**valve
                     cls.relay_board.set_all_relays(relay)
         return now_in_range
@@ -149,15 +135,6 @@ class WaterThread(threading.Thread):
 
     def run(cls):
         while not cls.e_quit.is_set():
-
-            cls.ll.log("KMDB ++++++++++++++++ in_dict[man_mode]: " + str(cls.in_dict["man_mode"]), "d")
-            cls.ll.log("KMDB ++++++++++++++++  in_dict[man_run]: " + str(cls.in_dict["man_run"]), "d")
-            cls.ll.log("KMDB ****************       cls.man_run: " + str(cls.man_run), "d")
-
-            cls.ll.log("cls.in_dict: " + str(cls.in_dict), "d")
-            cls.ll.log("cls.in_dict[man_times]: " + str(cls.in_dict["conf"]["man_times"]), "d")
-            cls.ll.log("cls.in_dict[run_times]: " + str(cls.in_dict["conf"]["run_times"]), "d")
-
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
             cls.day = datetime.today().weekday()
@@ -167,14 +144,6 @@ class WaterThread(threading.Thread):
             
             cls.local_start_time = now_in_sec - cls.start_time
             cls.in_dict['valve_status'] = 0
-            cls.ll.log("cls.run_today[0]: " + str(cls.run_today[0]) + " now_in_sec: " + str(now_in_sec) + " cls.run_today[7]: " + str(cls.run_today[7]), "d")
-
-            cls.ll.log("cls.run_today[0] < now_in_sec < cls.run_today[7]", "d")
-            cls.ll.log("@@@@@@@@@@@ cls.start_run: " + str(cls.start_run), "d")
-            cls.ll.log("&&&&&&&&&&& cls.end_run: " + str(cls.end_run), "d")
-            cls.ll.log("$$$$$$$$$$$ now_in_sec: " + str(now_in_sec), "d")
-            cls.ll.log("@@@@@@@@@@@ cls.run_today[0]: " + str(cls.run_today[0]), "d")
-            cls.ll.log("&&&&&&&&&&& cls.run_today[7]: " + str(cls.run_today[7]), "d")
             
             # set_valves does not depend on mode Water or Manual
             if not cls.set_valves(now_in_sec):
