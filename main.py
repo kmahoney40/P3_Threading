@@ -68,8 +68,9 @@ def display_body(win, logger):
             win.clrtoeol()
 
         for run in range(num_runs):
-            # Packing a lot into one line, love slice.
-            win.addstr(0 + run, 43, days[run] + str((water_dict["conf"]["run_times"][run])[1:]))
+            win.addstr(0 + run, 43, days[run])
+            for valve in range(num_valves):
+                win.addstr(0 + run, 43 + 4 + valve*4, str(water_dict["conf"]["run_times"][run][valve]).rjust(2))
             win.clrtoeol()
             
         if mode[0] == "Water/Manual":
