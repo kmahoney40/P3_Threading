@@ -202,6 +202,8 @@ def main(scr):
     # file set the log_level to the level in the config file.
     ll.update_log_level(water_dict['conf']['log_level'])   
 
+    # leading 0, 7 valves and manual mode
+    run_times_mode = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     rt = ["","","","","","","",""]
     for d in range(7):
         run_times[d] = str(water_dict["conf"]["run_times"][d])
@@ -233,9 +235,10 @@ def main(scr):
         
         read_keyboard(scr, event_quit, event_man_run, mode, ll)
 
-        if cf.check_for_update(water_dict['conf']):
+        if cf.check_for_update(water_dict['conf'], run_times_mode):
             test_dict = cf.read_conf('r')
             water_dict['conf'] = test_dict
+        ll.log("main run_times_mode: " + str(run_times_mode))
 
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " $$$$$$", "i")
         if water_dict["man_mode"] is 0:

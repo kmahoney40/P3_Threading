@@ -24,15 +24,13 @@ class ConfFile:
 
 
     #TODO Have this return [ret_val, man_run], python array with 2 bools
-    def check_for_update(cls, conf_file):
+    def check_for_update(cls, conf_file, run_times_mode):
         cls.counter += 1
         cls.ll.log("COUNTER: " + str(cls.counter))
         ret_val = False 
         man_run = None
- 
-            
-
-
+        cls.ll.log("run_times_mode: " + str(run_times_mode))
+        #run_times_mode[0] = run_times_mode[0] + 1
         if cls.counter > 20:
             cls.counter = 0
             try:
@@ -47,7 +45,7 @@ class ConfFile:
                     run_times = cls.request.http_get('temp/runtimes')
                     rtt_json = json.loads(run_times.text)
                     cls.ll.log("rtt_json: " + str(rtt_json))
-                    run_times1 = [
+                    run_times = [
                             [0, rtt_json[0]['v1'], rtt_json[0]['v2'], rtt_json[0]['v3'], rtt_json[0]['v4'], rtt_json[0]['v5'], rtt_json[0]['v6'], rtt_json[0]['v7']],
                             [0, rtt_json[1]['v1'], rtt_json[1]['v2'], rtt_json[1]['v3'], rtt_json[1]['v4'], rtt_json[1]['v5'], rtt_json[1]['v6'], rtt_json[1]['v7']],
                             [0, rtt_json[2]['v1'], rtt_json[2]['v2'], rtt_json[2]['v3'], rtt_json[2]['v4'], rtt_json[2]['v5'], rtt_json[2]['v6'], rtt_json[2]['v7']],
@@ -56,14 +54,16 @@ class ConfFile:
                             [0, rtt_json[5]['v1'], rtt_json[5]['v2'], rtt_json[5]['v3'], rtt_json[5]['v4'], rtt_json[5]['v5'], rtt_json[5]['v6'], rtt_json[5]['v7']],
                             [0, rtt_json[6]['v1'], rtt_json[6]['v2'], rtt_json[6]['v3'], rtt_json[6]['v4'], rtt_json[6]['v5'], rtt_json[6]['v6'], rtt_json[6]['v7']],
                         ]
-
-                    cls.ll.log("run_times1: " + str(run_times1))
+                    man_times = [0, rtt_json[7]['v1'], rtt_json[7]['v2'], rtt_json[7]['v3'], rtt_json[7]['v4'], rtt_json[7]['v5'], rtt_json[7]['v6'], rtt_json[7]['v7']]
+                    man_mode = rtt_json[7]['run_manual']
+                    cls.ll.log("run_times: " + str(run_times))
+                    cls.ll.log("man_mode: " + str(man_mode))
                     conf_data = ''
                     with open('irrigation.conf', 'r') as fp:
                         conf_data = fp.read()
 
                     conf_json = json.loads(conf_data)
-                    conf_json['run_times'] = run_times1
+                    conf_json['run_times'] = run_times
                     cls.ll.log("conf_json-conf_json: " + str(conf_json))
 
                     with open('irrigation.conf', 'w') as fp:
