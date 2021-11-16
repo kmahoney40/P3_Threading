@@ -10,6 +10,7 @@ import TempThread
 import HttpThread
 import logger
 import e_mail
+from Request import Request
 
 
 
@@ -69,14 +70,14 @@ def display_body(win, logger):
 
         for run in range(num_runs):
             win.addstr(0 + run, 43, days[run])
-            for valve in range(num_valves):
-                win.addstr(0 + run, 43 + 4 + valve*4, str(water_dict["conf"]["run_times"][run][valve]).rjust(2))
+            for valve in range(num_valves + 1):
+                win.addstr(0 + run, 41 + 4 + valve*4, str(water_dict["conf"]["run_times"][run][valve]).rjust(2))
             win.clrtoeol()
             
         if mode[0] == "Water/Manual":
             win.addstr(8, 0, "Up: 'a' 's' 'd' 'f' 'g' 'h' 'j'")
             # man_times length is 8, extra is used in calculations in WaterThread
-            for v in range(1,len(water_dict['conf']['man_times'])):
+            for v in range(1,len(water_dict['conf']['man_times']) + 1):
                 win.addstr(9, 3 + (v-1)*4, str(water_dict['conf']['man_times'][v]).rjust(3)) 
             win.addstr(10, 0, "Dn: 'z' 'x' 'c' 'v' 'b' 'n' 'm'")
         else:
@@ -226,13 +227,16 @@ def main(scr):
     threads.append(thread1)
     threads.append(thread2)
     #threads.append(thread3)
-   
+    
+    request = Request('http://192.168.1.106/', ll)
+    
     mail = e_mail.e_mail()
     now = datetime.now()
     mail.send_mail('from WaterThread ctor', str(now))
-   
+    count = 0
     while not event_quit.is_set():
         
+        # todo make this read_keyboard event driven. Keep if tree, but set an event, ie e_man_mode, e_man_run...
         read_keyboard(scr, event_quit, event_man_run, mode, ll)
 
         if cf.check_for_update(water_dict['conf'], run_times_mode):
@@ -241,7 +245,7 @@ def main(scr):
         ll.log("main run_times_mode: " + str(run_times_mode))
 
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " $$$$$$", "i")
-        if water_dict["man_mode"] is 0:
+        if water_dict["man_mode"] == 0:
             mode[0] = "Water"
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " #####")
         ll.log("water_dict['conf']: " + str(water_dict['conf']))

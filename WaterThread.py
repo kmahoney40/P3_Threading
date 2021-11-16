@@ -66,7 +66,7 @@ class WaterThread(threading.Thread):
         cls.day = datetime.today().weekday()
 
         # not manual 
-        if cls.in_dict["man_mode"] is 0:
+        if cls.in_dict["man_mode"] == 0:
             today_times = cls.run_times[cls.day].copy()
             cls.run_today = cls.run_times[cls.day].copy()
             
@@ -134,7 +134,9 @@ class WaterThread(threading.Thread):
     # set_valves    
 
     def run(cls):
+        count = 0
         while not cls.e_quit.is_set():
+
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
             cls.day = datetime.today().weekday()
@@ -151,7 +153,7 @@ class WaterThread(threading.Thread):
                 cls.send_mail = True
                 cls.relay_board.set_all_relays(0)
                 cls.ll.log("cls.relay_board.set_all_relays(0) in else")
-                if cls.in_dict["man_mode"] is 1 and  now_in_sec > cls.end_run:
+                if cls.in_dict["man_mode"] == 1 and  now_in_sec > cls.end_run:
                     cls.in_dict["man_mode"] = 0
                     cls.in_dict["man_run"] = 0
                     cls.e_man_run.clear()
