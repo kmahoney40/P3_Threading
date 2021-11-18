@@ -65,6 +65,13 @@ class WaterThread(threading.Thread):
         # The days of the week Mon = 0, Tue = 1...
         cls.day = datetime.today().weekday()
 
+
+        #if cls.man_times[7] == 1:
+        #    cls.in_dict["man_mode"] = 0
+        #    cls.e_man_run.set()
+        #    cls.man_times[7] = 0
+
+
         # not manual 
         if cls.in_dict["man_mode"] == 0:
             today_times = cls.run_times[cls.day].copy()

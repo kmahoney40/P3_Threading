@@ -70,16 +70,16 @@ def display_body(win, logger):
 
         for run in range(num_runs):
             win.addstr(0 + run, 43, days[run])
-            for valve in range(num_valves + 1):
+            for valve in range(1, num_valves + 1):
                 win.addstr(0 + run, 41 + 4 + valve*4, str(water_dict["conf"]["run_times"][run][valve]).rjust(2))
             win.clrtoeol()
             
         if mode[0] == "Water/Manual":
             win.addstr(8, 0, "Up: 'a' 's' 'd' 'f' 'g' 'h' 'j'")
             # man_times length is 8, extra is used in calculations in WaterThread
-            for v in range(1,len(water_dict['conf']['man_times']) + 1):
+            for v in range(1,len(water_dict['conf']['man_times'])):# + 1):
                 win.addstr(9, 3 + (v-1)*4, str(water_dict['conf']['man_times'][v]).rjust(3)) 
-            win.addstr(10, 0, "Dn: 'z' 'x' 'c' 'v' 'b' 'n' 'm'")
+                win.addstr(10, 0, "Dn: 'z' 'x' 'c' 'v' 'b' 'n' 'm'")
         else:
             win.move(8,0)
             win.clrtoeol()
@@ -194,7 +194,7 @@ def main(scr):
     event_man_run = threading.Event()
 
     test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
-    cf = ConfFile.ConfFile(test_dict['conf'], ll, event_quit)
+    cf = ConfFile.ConfFile(test_dict['conf'], ll, event_man_run, event_quit)
     test_dict = cf.read_conf('r')
 
     water_dict['conf'] = test_dict
@@ -239,10 +239,11 @@ def main(scr):
         # todo make this read_keyboard event driven. Keep if tree, but set an event, ie e_man_mode, e_man_run...
         read_keyboard(scr, event_quit, event_man_run, mode, ll)
 
-        if cf.check_for_update(water_dict['conf'], run_times_mode):
+        if cf.check_for_update(water_dict['conf'], run_times_mode, mode):
             test_dict = cf.read_conf('r')
             water_dict['conf'] = test_dict
         ll.log("main run_times_mode: " + str(run_times_mode))
+
 
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " $$$$$$", "i")
         if water_dict["man_mode"] == 0:

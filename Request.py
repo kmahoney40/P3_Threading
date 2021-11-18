@@ -21,7 +21,10 @@ class Request():
             cls.ll.log('Request.http_get exception: url=' + cls.url + ', path=' + path + 'Exception:' + str(ex), 'e' )
         
     def http_post(cls, path, headers, data):
-        ret = requests.post('http://192.168.1.106/temp/', headers=headers, data=data)
+        ret = requests.post(cls.url + path, headers=headers, data=data)
         return ret
         #TODO add param checking and except Exception catch all error with logging. See http_get above
         
+    def http_put(cls, path, data):
+        return requests.put(cls.url + path, data = data)
+    
