@@ -1,5 +1,5 @@
 #from relay_plate import RelayPlate
-import piplates.RELAYplate as RELAY
+from piplates import RELAYplate as RELAY
 import sys
 import time
 import logger
