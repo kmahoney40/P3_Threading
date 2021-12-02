@@ -56,8 +56,8 @@ class WaterThread(threading.Thread):
         hours = self.start_time // 100
         min = self.start_time - (hours * 100)
         self.start_time = 60 * (hours * 60 + min)
-        self.local_start_time = self.start_time
-        self.ll.log("confJson.[start_time]: " + str(self.start_time) + " local_start_time: " + str(self.local_start_time))
+        #self.local_start_time = self.start_time
+        #self.ll.log("confJson.[start_time]: " + str(self.start_time) + " local_start_time: " + str(self.local_start_time))
         self.relay_board.set_all_relays(0)
     # __init__
 
@@ -88,7 +88,7 @@ class WaterThread(threading.Thread):
             cls.ll.log("cls.run_today: " + str(cls.run_today),"d")
             cls.ll.log("cls.start_run: " + str(cls.start_run),"d")
             cls.ll.log("cls.end_run: " + str(cls.end_run),"d")
-            cls.local_start_time = now_in_sec - cls.start_time
+            #cls.local_start_time = now_in_sec - cls.start_time
         else:
             if not cls.e_man_run.is_set():
                 cls.ll.log("0.1 MANUAL set_run_today cls.man_times: " + str(cls.man_times))
@@ -104,7 +104,7 @@ class WaterThread(threading.Thread):
                 cls.run_today = list(map(lambda v: v * 60 + now_in_sec, cls.run_today.copy()))
                 cls.ll.log("1.7 MANUAL set_run_today cls.run_today: " + str(cls.run_today))
                 
-                cls.local_start_time = now_in_sec
+                #cls.local_start_time = now_in_sec
                 
                 cls.start_run = now_in_sec 
 
@@ -151,7 +151,7 @@ class WaterThread(threading.Thread):
             # Set the current run times, todays times or the manual times
             cls.set_run_today(now_in_sec)
             
-            cls.local_start_time = now_in_sec - cls.start_time
+            #cls.local_start_time = now_in_sec - cls.start_time
             cls.in_dict['valve_status'] = 0
             
             # set_valves does not depend on mode Water or Manual
@@ -164,7 +164,7 @@ class WaterThread(threading.Thread):
                     cls.in_dict["man_mode"] = 0
                     cls.in_dict["man_run"] = 0
                     cls.e_man_run.clear()
-                    cls.local_start_time = now_in_sec - cls.start_time
+                    #cls.local_start_time = now_in_sec - cls.start_time
 
             cls.ll.log("WATER THREAD" + " threadID: " + str(cls.threadID))
 

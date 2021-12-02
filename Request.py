@@ -1,4 +1,5 @@
 import requests
+import json
 
 class Request():
     def __init__(self, url, loglog):
@@ -26,5 +27,10 @@ class Request():
         #TODO add param checking and except Exception catch all error with logging. See http_get above
         
     def http_put(cls, path, data):
-        return requests.put(cls.url + path, data = data)
+        #return requests.put(cls.url + path, data = data)
+        data = {'run_manual':0}
+        headers = {"Content-Type": "application/json"}
+        ret = requests.put(cls.url + path, data=json.dumps(data), headers=headers)
+        return ret
+    
     
