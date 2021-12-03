@@ -10,7 +10,7 @@ import TempThread
 import HttpThread
 import logger
 import e_mail
-from Request import Request
+#from Request import Request
 
 
 
@@ -22,7 +22,6 @@ water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining":
                     "pid": 0,
                     "alpha": 0.075,
                     "log_level": "DEBUG",
-                    "man_times": [0, 0, 0, 0, 0, 0, 0, 0],
                     "run_times": [
                         [0, 10, 15,  0,  0, 15, 15, 10],
                         [10, 10,  10,  0, 45,  10, 10, 10],
@@ -30,7 +29,8 @@ water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining":
                         [10,  0,  0,  0,  0,  0,  0,  0],
                         [5, 5,  0,  0,  0, 15, 0,  5],
                         [0,  0, 15,  0, 45,  0,  0,  0],
-                        [0, 10,  0,  5,  0,  5,  5,  0]
+                        [0, 10,  0,  5,  0,  5,  5,  0],
+                        [0, 0, 0, 0, 0, 0, 0, 0]
                     ]
                 }
             }
@@ -39,6 +39,8 @@ daqc_dict = [0,0,0,0,0,0,0,0]
 days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
 e_mode = ""
+is_man_run = [False]
+
 #man_run = False
 run_times = ["", "", "", "", "", "", ""]
 disp_run_times = []
@@ -68,25 +70,18 @@ def display_body(win, logger):
             win.addstr(0 + valve, 0, "Valve " + str(valve+1) + " state: " + on_off)
             win.clrtoeol()
 
-        for run in range(num_runs):
+        for run in range(num_runs - 1):
             win.addstr(0 + run, 43, days[run])
             for valve in range(1, num_valves + 1):
                 win.addstr(0 + run, 41 + 4 + valve*4, str(water_dict["conf"]["run_times"][run][valve]).rjust(2))
             win.clrtoeol()
-            
-        if mode[0] == "Water/Manual":
-            win.addstr(8, 0, "Up: 'a' 's' 'd' 'f' 'g' 'h' 'j'")
-            # man_times length is 8, extra is used in calculations in WaterThread
-            for v in range(1,len(water_dict['conf']['man_times'])):# + 1):
-                win.addstr(9, 3 + (v-1)*4, str(water_dict['conf']['man_times'][v]).rjust(3)) 
-                win.addstr(10, 0, "Dn: 'z' 'x' 'c' 'v' 'b' 'n' 'm'")
-        else:
-            win.move(8,0)
-            win.clrtoeol()
-            win.move(9,0)
-            win.clrtoeol()
-            win.move(10,0)
-            win.clrtoeol()
+
+        win.addstr(8, 0, "Up: 'a' 's' 'd' 'f' 'g' 'h' 'j'")
+        # man_times length is 8, extra is used in calculations in WaterThread
+        for v in range(1,len(water_dict['conf']['run_times'][7])):# + 1):
+            win.addstr(9, 3 + (v-1)*4, str(water_dict['conf']['run_times'][7][v]).rjust(3)) 
+            win.addstr(10, 0, "Dn: 'z' 'x' 'c' 'v' 'b' 'n' 'm'")
+        logger.log("water_dict['conf']['run_times'][7]: " + str(water_dict['conf']['run_times'][7]))
     except:
         logger.log("Error in display_body: " + str(sys.exc_info()[0]))
 # display_body
@@ -129,7 +124,7 @@ def adj_man_time(inCh, logger):
     return ret_tuple
 # adj_man_time
 
-def read_keyboard(screen, event_quit, event_man_run, mode, logger):
+def read_keyboard(screen, event_quit, is_man_run, mode, logger):
      
     c = screen.getch()
     if c != curses.ERR:
@@ -139,25 +134,19 @@ def read_keyboard(screen, event_quit, event_man_run, mode, logger):
         if chr(c) == 'w':
             mode[0] = "Water"
             water_dict["man_mode"] = 0
-            event_man_run.clear()
+            is_man_run[0] = False
             
             logger.log("w pressed: mode = " + str(mode))
         if chr(c) == 't':
             mode[0] = "Temp"
             logger.log("t pressed: mode = " + str(mode))
-        if chr(c) == 'm':
-            if mode[0] == "Water":
-                mode[0] = "Water/Manual"
-                water_dict["man_mode"] = 1
-                logger.log("m pressed: mode = " + str(mode))
             
-        if mode[0] == "Water/Manual":
-            if chr(c) == 'r':
-                event_man_run.set()
+        if chr(c) == 'r':
+            is_man_run[0] = True
 
-            idx,delta = adj_man_time(chr(c), logger)
-            water_dict['conf']['man_times'][idx] += delta
-            water_dict['conf']['man_times'][idx] = max(0, min(water_dict['conf']['man_times'][idx], 99))
+        idx,delta = adj_man_time(chr(c), logger)
+        water_dict['conf']['run_times'][7][idx] += delta
+        water_dict['conf']['run_times'][7][idx] = max(0, min(water_dict['conf']['run_times'][7][idx], 99))
 # read_keyboard
 
     
@@ -182,7 +171,7 @@ def main(scr):
     headder_win = curses.newwin(headder_height, headder_width, headder_begin_y, headder_begin_x)
 
     body_win = curses.newwin(body_height, body_width, body_begin_y, body_begin_x)
-    temp_body_win = curses.newwin(body_height, body_width, body_begin_y, body_begin_x)
+    #temp_body_win = curses.newwin(body_height, body_width, body_begin_y, body_begin_x)
 
     foot_win = curses.newwin(foot_height, foot_width, foot_begin_y, foot_begin_x)
 
@@ -191,10 +180,9 @@ def main(scr):
     # set when operator presses 'q'
     event_quit = threading.Event()
     event_reload = threading.Event()
-    event_man_run = threading.Event()
 
     test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
-    cf = ConfFile.ConfFile(test_dict['conf'], ll, event_man_run, event_quit)
+    cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
     test_dict = cf.read_conf('r')
 
     water_dict['conf'] = test_dict
@@ -214,7 +202,7 @@ def main(scr):
 
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, event_man_run)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run)
     thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
     #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
     
@@ -228,28 +216,27 @@ def main(scr):
     threads.append(thread2)
     #threads.append(thread3)
     
-    request = Request('http://192.168.1.106/', ll)
+    #request = Request('http://192.168.1.106/', ll)
     
     mail = e_mail.e_mail()
     now = datetime.now()
     mail.send_mail('from WaterThread ctor', str(now))
     count = 0
     while not event_quit.is_set():
-        
-        # todo make this read_keyboard event driven. Keep if tree, but set an event, ie e_man_mode, e_man_run...
-        read_keyboard(scr, event_quit, event_man_run, mode, ll)
 
-        if cf.check_for_update(water_dict['conf'], run_times_mode, mode):
+        read_keyboard(scr, event_quit, is_man_run, mode, ll)
+
+        if cf.check_for_update(run_times_mode, mode):
             test_dict = cf.read_conf('r')
             water_dict['conf'] = test_dict
-        ll.log("main run_times_mode: " + str(run_times_mode))
+        ll.log("main is_man_run[0]: " + str(is_man_run[0]))
 
-
-        ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " $$$$$$", "i")
+        ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]), "d")
         if water_dict["man_mode"] == 0:
             mode[0] = "Water"
-        ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]) + " #####")
-        ll.log("water_dict['conf']: " + str(water_dict['conf']))
+        ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]), "d")
+        ll.log("is_man_run[0]: " + str(is_man_run[0]))
+        ll.log("water_dict['conf']: " + str(water_dict['conf']), "d")
 
         display_head(headder_win, ll, mode[0])
         display_foot(foot_win, ll)
