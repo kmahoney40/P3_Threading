@@ -26,11 +26,22 @@ class Request():
         return ret
         #TODO add param checking and except Exception catch all error with logging. See http_get above
         
-    def http_put(cls, path, data):
-        #return requests.put(cls.url + path, data = data)
-        data = {'run_manual':0}
-        headers = {"Content-Type": "application/json"}
-        ret = requests.put(cls.url + path, data=json.dumps(data), headers=headers)
+    def http_put(cls, path, data, headers):
+        try:
+            if not (isinstance(path, str) and len(path)):
+                raise ValueError('path: ' + str(path) + ' is not a string or is empty')
+            if not (len(str(data))):
+                raise ValueError('data: ' + str(data) + ' is empty')
+            if not (len(str(headers))):
+                raise ValueError('headers: ' + str(headers) + ' is empty')
+            
+            ret = requests.put(cls.url + path, data = data, headers=headers)
+        except ValueError as ex:
+            cls.ll.log('Request.http_put argument exception: ' + str(ex), 'e')
+            ret = str(ex)
+        except Exception as ex:
+            cls.ll.log('Request.http_put exception: url=' + cls.url + ', path=' + path + ', data= ' + str(data) + ', headers=' + str(data) + ' Exception:' + str(ex), 'e' )
+            ret = str(ex)
+
         return ret
-    
     
