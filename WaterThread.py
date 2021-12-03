@@ -110,7 +110,7 @@ class WaterThread(threading.Thread):
 
     def set_valves(cls, now_in_sec):
         this_run_idx = 1 if cls.is_man_run[0] else 0
-        now_in_range = False
+        now_in_range = False 
         cls.ll.log("cls.start_run[this_run_idx]: " + str(cls.start_run[this_run_idx]), "d")
         cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
         cls.ll.log("cls.end_run[this_run_idx]: " + str(cls.end_run[this_run_idx]), "d")
