@@ -53,8 +53,6 @@ class logger:
         new_day = datetime.date.today()
         dtnow = str(datetime.datetime.now()) + " "
 
-        #cls.logger.critical(dtnow + "CRITICAL self.l_level: " + str(cls.l_level))
-
         if lvl.lower() == "d":
             cls.logger.debug(dtnow + "DEBUG: " + msg)
         if lvl.lower() == "i":
