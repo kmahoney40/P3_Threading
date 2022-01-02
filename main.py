@@ -40,6 +40,7 @@ days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
 e_mode = ""
 is_man_run = [False]
+is_rain_delay = [False]
 
 #man_run = False
 run_times = ["", "", "", "", "", "", ""]
@@ -49,7 +50,9 @@ def display_head(win, logger, mode):
     try:
         now = datetime.now()
         now_formated = now.strftime("%m/%d/%Y, %H:%M:%S")#datetime.now()
-        win.addstr(0, 0, "Now: " +  now_formated + "   Mode: " + mode + " Auto Start Time: " + str(water_dict["conf"]["start_time"]))
+        win.addstr(0, 0, "Time: " +  now_formated + "   Mode: " + mode + " Auto Start Time: " + str(water_dict["conf"]["start_time"]))
+        win.clrtoeol()
+        win.addstr(1, 0, "Rain Delay: " + str(is_rain_delay[0]))
         win.clrtoeol()
     except:
         logger.log("Error in display_head: " + str(sys.exc_info()[0]))
@@ -124,10 +127,18 @@ def adj_man_time(inCh, logger):
     return ret_tuple
 # adj_man_time
 
-def read_keyboard(screen, event_quit, is_man_run, mode, logger):
+def read_keyboard(screen, event_quit, is_man_run, is_rain_delay, mode, logger):
      
     c = screen.getch()
+
     if c != curses.ERR:
+
+        logger.log("1 pressed: is_rain_delay: " + chr(c))
+        logger.log("1 pressed: is_rain_delay: " + chr(c))
+        logger.log("1 pressed: is_rain_delay: " + chr(c))
+        logger.log("1 pressed: is_rain_delay: " + chr(c))
+
+
         if chr(c) == 'q':
             event_quit.set()
             logger.log("Stopped by user - pressed q", "w")
@@ -135,14 +146,23 @@ def read_keyboard(screen, event_quit, is_man_run, mode, logger):
             mode[0] = "Water"
             water_dict["man_mode"] = 0
             is_man_run[0] = False
-            
             logger.log("w pressed: mode = " + str(mode))
         if chr(c) == 't':
             mode[0] = "Temp"
             logger.log("t pressed: mode = " + str(mode))
-            
         if chr(c) == 'r':
             is_man_run[0] = True
+            logger.log("r pressed: mode = manual run")
+        if chr(c) == '1':
+            is_man_run[0] = False
+            is_rain_delay[0] = (not is_rain_delay[0])
+            logger.log("1 pressed: toggel rain delay")
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
 
         idx,delta = adj_man_time(chr(c), logger)
         water_dict['conf']['run_times'][7][idx] += delta
@@ -202,7 +222,7 @@ def main(scr):
 
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, is_rain_delay)
     thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
     #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
     
@@ -224,7 +244,7 @@ def main(scr):
     count = 0
     while not event_quit.is_set():
 
-        read_keyboard(scr, event_quit, is_man_run, mode, ll)
+        read_keyboard(scr, event_quit, is_man_run, is_rain_delay, mode, ll)
 
         if cf.check_for_update(run_times_mode, mode):
             test_dict = cf.read_conf('r')

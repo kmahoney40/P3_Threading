@@ -14,7 +14,7 @@ import json
 # relay-plate. The shared innput dictionary can be expanded to include weather data that may be used
 # to dynamically modify runtimes.
 class WaterThread(threading.Thread):
-    def __init__(self, threadID, name, logger, in_dict, e_quit, is_man_run):
+    def __init__(self, threadID, name, logger, in_dict, e_quit, is_man_run, is_rain_delay):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -22,6 +22,7 @@ class WaterThread(threading.Thread):
         self.in_dict = in_dict
         self.e_quit = e_quit
         self.is_man_run = is_man_run
+        self.is_rain_delay = is_rain_delay
         self.previous_man_run = False
         self.pid = self.in_dict['conf']['pid']
         self.relay_board = RelayBoard(self.pid, logger, e_quit)
@@ -109,29 +110,33 @@ class WaterThread(threading.Thread):
     # set_run_today
 
     def set_valves(cls, now_in_sec):
-        this_run_idx = 1 if cls.is_man_run[0] else 0
-        now_in_range = False 
-        cls.ll.log("cls.start_run[this_run_idx]: " + str(cls.start_run[this_run_idx]), "d")
-        cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
-        cls.ll.log("cls.end_run[this_run_idx]: " + str(cls.end_run[this_run_idx]), "d")
-        cls.ll.log("this_run_idx: " + str(this_run_idx), "d")
-        if cls.start_run[this_run_idx] < now_in_sec < cls.end_run[this_run_idx]:
-            now_in_range = True
-            for valve in range(7):
-                if cls.this_run[this_run_idx][valve] < now_in_sec < cls.this_run[this_run_idx][valve+1]:
-                    cls.ll.log("valve " + str(valve) + " = ON")
-                    cls.in_dict['valve_status'] += 2**valve
-                    sec_remaining = cls.this_run[this_run_idx][valve+1] - now_in_sec
-                    cls.ll.log("@@@@ sec_remaining: " + str(sec_remaining))
-                    sec = sec_remaining % 60
+        if cls.is_rain_delay[0]:
+            cls.relay_board.set_all_relays(0)
+            now_in_range = False
+        else:
+            this_run_idx = 1 if cls.is_man_run[0] else 0
+            now_in_range = False 
+            cls.ll.log("cls.start_run[this_run_idx]: " + str(cls.start_run[this_run_idx]), "d")
+            cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
+            cls.ll.log("cls.end_run[this_run_idx]: " + str(cls.end_run[this_run_idx]), "d")
+            cls.ll.log("this_run_idx: " + str(this_run_idx), "d")
+            if cls.start_run[this_run_idx] < now_in_sec < cls.end_run[this_run_idx]:
+                now_in_range = True
+                for valve in range(7):
+                    if cls.this_run[this_run_idx][valve] < now_in_sec < cls.this_run[this_run_idx][valve+1]:
+                        cls.ll.log("valve " + str(valve) + " = ON")
+                        cls.in_dict['valve_status'] += 2**valve
+                        sec_remaining = cls.this_run[this_run_idx][valve+1] - now_in_sec
+                        cls.ll.log("@@@@ sec_remaining: " + str(sec_remaining))
+                        sec = sec_remaining % 60
 
-                    remaining_sec = sec_remaining % 60
-                    remaining_min = int((sec_remaining - sec) / 60)
-                    cls.ll.log("@@@@ remaining_min: " + str(remaining_min))
-                    time_remaining_str = str(remaining_min).zfill(2) + ":" + str(remaining_sec).zfill(2)
-                    cls.in_dict["time_remaining"] = time_remaining_str
-                    relay = 2**valve
-                    cls.relay_board.set_all_relays(relay)
+                        remaining_sec = sec_remaining % 60
+                        remaining_min = int((sec_remaining - sec) / 60)
+                        cls.ll.log("@@@@ remaining_min: " + str(remaining_min))
+                        time_remaining_str = str(remaining_min).zfill(2) + ":" + str(remaining_sec).zfill(2)
+                        cls.in_dict["time_remaining"] = time_remaining_str
+                        relay = 2**valve
+                        cls.relay_board.set_all_relays(relay)
         return now_in_range
     # set_valves    
 
