@@ -32,7 +32,7 @@ class ConfFile:
         ret_val = False 
         cls.ll.log("run_times_mode: " + str(run_times_mode))
 
-        if cls.counter > 13:
+        if True:#cls.counter > 13:
             cls.counter = 0
             cls.ll.log("==========  13  ==============", "d")
             try:
@@ -79,7 +79,10 @@ class ConfFile:
 
                     conf_json = json.loads(conf_data)
                     conf_json['run_times'] = run_times
-                    cls.ll.log("conf_json-conf_json: " + str(conf_json))
+                    cls.ll.log("############conf_json-conf_json: " + str(conf_json))
+                    cls.ll.log("############conf_json-conf_json: " + str(conf_json))
+                    cls.ll.log("############conf_json-conf_json: " + str(conf_json))
+                    cls.ll.log("############conf_json-conf_json: " + str(conf_json))
 
                     with open('irrigation.conf', 'w') as fp:
                         json.dump(conf_json, fp)
