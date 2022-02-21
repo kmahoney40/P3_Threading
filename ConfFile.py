@@ -26,13 +26,13 @@ class ConfFile:
         return 0        
 
 
-    def check_for_update(cls, run_times_mode, mode):
+    def check_for_update(cls, run_times_mode, mode, water_dict):
         cls.counter += 1
         cls.ll.log("COUNTER: " + str(cls.counter))
         ret_val = False 
         cls.ll.log("run_times_mode: " + str(run_times_mode))
 
-        if True:#cls.counter > 13:
+        if cls.counter > 5:
             cls.counter = 0
             cls.ll.log("==========  13  ==============", "d")
             try:
@@ -73,6 +73,9 @@ class ConfFile:
 
                     cls.ll.log("$$ ConfFile.check_for_update: run_times: " + str(run_times))
                     
+                    water_dict['conf']['run_times'] = run_times
+                    cls.ll.log("*** str(water_dict[conf][run_times] " + str(water_dict['conf']['run_times']))
+
                     conf_data = ''
                     with open('irrigation.conf', 'r') as fp:
                         conf_data = fp.read()
@@ -86,9 +89,9 @@ class ConfFile:
 
                     with open('irrigation.conf', 'w') as fp:
                         json.dump(conf_json, fp)
- 
+
                     ret_val = True
             except Exception as ex:
                 cls.ll.log("Exception: " + str(ex), 'e')
-        ret_val = ret_val
+
         return ret_val
