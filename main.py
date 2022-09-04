@@ -9,7 +9,7 @@ import WaterThread
 import TempThread
 import HttpThread
 import logger
-import e_mail
+#import e_mail
 #from Request import Request
 
 
@@ -18,7 +18,7 @@ import e_mail
 #water_dict = [0, {"start_time": 600}]
 water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", 
                 "conf": {
-                    "start_time": 600,
+                    "start_time": 910,
                     "pid": 0,
                     "alpha": 0.075,
                     "log_level": "DEBUG",
@@ -239,9 +239,9 @@ def main(scr):
     
     #request = Request('http://192.168.1.106/', ll)
     
-    mail = e_mail.e_mail()
-    now = datetime.now()
-    mail.send_mail('from WaterThread ctor', str(now))
+    #mail = e_mail.e_mail()
+    #now = datetime.now()
+    #mail.send_mail('from WaterThread ctor', str(now))
 
     count = 0
     while not event_quit.is_set():

@@ -86,24 +86,26 @@ class WaterThread(threading.Thread):
         if not cls.previous_man_run:
             # update this_run[1], manual run only if not actively in man run
 
+            run_min_as_timedelta = (cls.in_dict["conf"]["run_times"][7]).copy()
             cls.this_run_local[1] = (cls.in_dict["conf"]["run_times"][7]).copy()
             cls.this_run_local[1] = list(map(lambda v: now + cls.min_to_timedelta(v), cls.this_run_local[1]))
 
-            # for v in range(1,8):
-            #     run_min_as_timedelta = cls.this_run_local[1][v-1] + run_min_as_timedelta
-            #     cls.this_run_local[1][v] = cls.this_run_local[1][v-1] + cls.in_dict["conf"]["run_times"][7][v]
-            #cls.this_run_local[1] = list(map(lambda v: v * 60 + now_in_sec, (cls.this_run[1]).copy()))
-            #cls.ll.log("cls.this_run[1]: " + str(cls.this_run[1]))
+            for v in range(1,8):
+                #run_min_as_timedelta = cls.this_run_local[1][v-1]
+                cls.this_run_local[1][v] = cls.in_dict["conf"]["run_times"][7][v-1] + cls.in_dict["conf"]["run_times"][7][v]
+                #cls.this_run_local[1][v] = cls.this_run_local[1][v - 1]
+            #cls.this_run_local[1] = list(map(lambda v: cls.min_to_timedelta(v) + now, (cls.this_run_local[1]).copy()))
+            # cls.ll.log("cls.this_run_local[1]: " + str(cls.this_run_local[1]))
 
-            # cls.start_run[1] = now_in_sec 
-            # cls.end_run[1] = now_in_sec#cls.this_run[1][7]
+            cls.start_run[1] = now
+            cls.end_run[1] = cls.min_to_timedelta(cls.this_run_local[1][7])
 
         # if cls.is_man_run[0] and not cls.previous_man_run:
         #     # regular run mode
-        #     cls.start_run[1] = now_in_sec 
-        #     cls.end_run[1] = cls.this_run[1][7]
-            
-        # if cls.end_run[1] < now_in_sec:
+        #     cls.start_run[1] = now
+        #     cls.end_run[1] = cls.this_run_local[1][7]
+        # cls.ll.log("********************** " + str(cls.end_run[1]) + " ** " + str(cls.this_run_local[1]))
+        # if cls.end_run[1] < now:
         #     cls.is_man_run[0] = False 
         # cls.previous_man_run = cls.is_man_run[0]
 
@@ -208,10 +210,12 @@ class WaterThread(threading.Thread):
 
     def run(cls):
 
-        cls.start_time_local = cls.int_time_to_datetime(cls.start_time_as_int)
-
         count = 0
         while not cls.e_quit.is_set():
+
+            #KMDB need to get the date comonent out of cls.start_time_local and others. 
+            # it is probalby a datetime timespan would be better. 
+            cls.start_time_local = cls.int_time_to_datetime(cls.start_time_as_int)
 
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
