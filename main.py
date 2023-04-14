@@ -9,7 +9,7 @@ import WaterThread
 import TempThread
 import HttpThread
 import logger
-import e_mail
+#import e_mail
 #from Request import Request
 
 
@@ -18,7 +18,7 @@ import e_mail
 #water_dict = [0, {"start_time": 600}]
 water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", 
                 "conf": {
-                    "start_time": 600,
+                    "start_time": 910,
                     "pid": 0,
                     "alpha": 0.075,
                     "log_level": "DEBUG",
@@ -40,6 +40,7 @@ days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
 e_mode = ""
 is_man_run = [False]
+is_rain_delay = [False]
 
 #man_run = False
 run_times = ["", "", "", "", "", "", ""]
@@ -48,8 +49,10 @@ disp_run_times = []
 def display_head(win, logger, mode):
     try:
         now = datetime.now()
-        now_formated = now.strftime("%m/%d/%Y, %H:%M:%S")#datetime.now()
-        win.addstr(0, 0, "Now: " +  now_formated + "   Mode: " + mode + " Auto Start Time: " + str(water_dict["conf"]["start_time"]))
+        now_formated = now.strftime("%m/%d/%Y, %H:%M:%S")
+        win.addstr(0, 0, "Time: " +  now_formated + "   Mode: " + mode + " Auto Start Time: " + str(water_dict["conf"]["start_time"]))
+        win.clrtoeol()
+        win.addstr(1, 0, "Rain Delay: " + str(is_rain_delay[0]))
         win.clrtoeol()
     except:
         logger.log("Error in display_head: " + str(sys.exc_info()[0]))
@@ -111,7 +114,7 @@ def adj_man_time(inCh, logger):
     valid_key_press = ['a','s','d','f','g','h','j','A','S','D','F','G','H','J','z','x','c','v','b','n','m','Z','X','C','V','B','N','M']
     if inCh in valid_key_press:
         logger.log("INSIDE adj_man_times inCh: " + str(inCh), "d")
-        # idx is for a list and we want to skip the 1st element, as the frist element of run_times is not actually a ru time
+        # idx is for a list and we want to skip the 1st element, as the first element of run_times is not actually a ru time
         idx = valid_key_press.index(inCh)
         if inCh.isupper():
             d_time = 5
@@ -124,10 +127,18 @@ def adj_man_time(inCh, logger):
     return ret_tuple
 # adj_man_time
 
-def read_keyboard(screen, event_quit, is_man_run, mode, logger):
+def read_keyboard(screen, event_quit, is_man_run, is_rain_delay, mode, logger):
      
     c = screen.getch()
+
     if c != curses.ERR:
+
+        logger.log("1 pressed: is_rain_delay: " + chr(c))
+        logger.log("1 pressed: is_rain_delay: " + chr(c))
+        logger.log("1 pressed: is_rain_delay: " + chr(c))
+        logger.log("1 pressed: is_rain_delay: " + chr(c))
+
+
         if chr(c) == 'q':
             event_quit.set()
             logger.log("Stopped by user - pressed q", "w")
@@ -135,15 +146,24 @@ def read_keyboard(screen, event_quit, is_man_run, mode, logger):
             mode[0] = "Water"
             water_dict["man_mode"] = 0
             is_man_run[0] = False
-            
             logger.log("w pressed: mode = " + str(mode))
         if chr(c) == 't':
             mode[0] = "Temp"
             logger.log("t pressed: mode = " + str(mode))
-            
         if chr(c) == 'r':
             is_man_run[0] = True
-
+            logger.log("r pressed: mode = manual run")
+        if chr(c) == '1':
+            is_man_run[0] = False
+            is_rain_delay[0] = (not is_rain_delay[0])
+            logger.log("1 pressed: toggel rain delay")
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+            logger.log("1 pressed: is_rain_delay: " + str(is_rain_delay[0]))
+        
         idx,delta = adj_man_time(chr(c), logger)
         water_dict['conf']['run_times'][7][idx] += delta
         water_dict['conf']['run_times'][7][idx] = max(0, min(water_dict['conf']['run_times'][7][idx], 99))
@@ -180,6 +200,7 @@ def main(scr):
     # set when operator presses 'q'
     event_quit = threading.Event()
     event_reload = threading.Event()
+    event_pause_water = threading.Event()
 
     test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
     cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
@@ -187,7 +208,7 @@ def main(scr):
 
     water_dict['conf'] = test_dict
 
-    # We use the logger in ConfFile with the defualt value 'DEBUG' after loading the conf 
+    # We use the logger in ConfFile with the default value 'DEBUG' after loading the conf 
     # file set the log_level to the level in the config file.
     ll.update_log_level(water_dict['conf']['log_level'])   
 
@@ -202,7 +223,7 @@ def main(scr):
 
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, is_rain_delay)
     thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
     #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
     
@@ -218,17 +239,28 @@ def main(scr):
     
     #request = Request('http://192.168.1.106/', ll)
     
-    mail = e_mail.e_mail()
-    now = datetime.now()
-    mail.send_mail('from WaterThread ctor', str(now))
+    #mail = e_mail.e_mail()
+    #now = datetime.now()
+    #mail.send_mail('from WaterThread ctor', str(now))
+
     count = 0
     while not event_quit.is_set():
 
-        read_keyboard(scr, event_quit, is_man_run, mode, ll)
+        read_keyboard(scr, event_quit, is_man_run, is_rain_delay, mode, ll)
+        
+        if cf.check_for_update(run_times_mode, mode, water_dict) is not False:
+            event_pause_water.set()
 
-        if cf.check_for_update(run_times_mode, mode):
-            test_dict = cf.read_conf('r')
-            water_dict['conf'] = test_dict
+        if event_pause_water.is_set():
+            count += 1
+        if count > 5:
+            event_pause_water.clear()
+            count = 0
+
+        # if cf.check_for_update(run_times_mode, mode, water_dict) is not False:
+        #     test_dict = cf.read_conf('r')
+        #     water_dict['conf'] = test_dict
+
         ll.log("main is_man_run[0]: " + str(is_man_run[0]))
 
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]), "d")
@@ -246,7 +278,7 @@ def main(scr):
         body_win.refresh()
         foot_win.refresh()
 
-        time.sleep(1.1)
+        time.sleep(1.0)
 
     # Wait for all threads to complete
     for t in threads:
