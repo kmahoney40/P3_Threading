@@ -21,12 +21,12 @@ class logger:
             self.l_level = logging.CRITICAL
 
 
-        log_file = '/var/src/P3_Threading/log/' + self.file_name + "_" + str(self.today) + '.log'
+        log_file = '/var/log/automation/' + self.file_name + "_" + str(self.today) + '.log'
         logging.basicConfig(filename=log_file, level=self.l_level)
         self.logger = logging.getLogger("Rotating Log")
         self.logger.setLevel(self.l_level)
         #self.logger.setLevel(logging.INFO)
-        log_file = "/var/src/P3_Threading/log/water.log"
+        log_file = "/var/log/automation/water.log"
         self.handler = TimedRotatingFileHandler(log_file,
                                             when="midnight",
                                             interval=1,

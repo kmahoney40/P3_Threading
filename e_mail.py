@@ -51,7 +51,7 @@ class e_mail:
         ipAsList = str.split(cls.host_ip, ".")
         cls.host_ip = "x.x." + ipAsList[2] + "." + ipAsList[3]
         cls.message = cls.message.format(cls.subject, cls.body, cls.host_ip, dt_now)
-        #cls.smtp_obj.sendmail(cls.sender, cls.receivers, cls.message)
+        cls.smtp_obj.sendmail(cls.sender, cls.receivers, cls.message)
         cls.smtp_obj.quit() 
         
      # def send_mail()
