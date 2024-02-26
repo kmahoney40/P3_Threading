@@ -10,7 +10,7 @@ import TempThread
 import HttpThread
 import logger
 #import e_mail
-#from Request import Request
+from Request import Request
 
 
 
@@ -41,12 +41,17 @@ mode = ["Water"]
 e_mode = ""
 is_man_run = [False]
 last_key = ['a']
+last_successful_update = [datetime.now()]
 
 #man_run = False
 run_times = ["", "", "", "", "", "", ""]
 disp_run_times = []
 day = [0] #0 - 6 for day of week
 man_value = 0 #0 - 6 for valve to manually run
+
+
+updateCounter = [0]
+newVal = [0]
 
 def display_head(win, logger, mode):
     try:
@@ -193,6 +198,51 @@ def read_keyboard(screen, event_quit, is_man_run, mode, logger, water_dict, last
         last_key[0] = chr(c)
 # read_keyboard
 
+#This needs to be in a thread
+def send_update(water_dict, logger):
+    request = Request('https://192.168.1.105:7131/', logger)
+    
+    try:
+        n = datetime.now()#("1/4/2024 2:33:09 PM", '%m/%d/%Y %I:%M:%S %p')
+        logger.log("n$$$$$$$$$$$$$$$$$$$$: " + str(n))
+        
+        current_time = datetime.now()
+        formatted_time = current_time.strftime("%m/%d/%Y %I:%M:%S %p")
+        logger.log("current_time [" + str(current_time) + "] formatted_time [" + str(formatted_time) + "]")
+        time_delta = current_time - last_successful_update[0]
+        if time_delta.seconds > 9:
+            try:
+                if updateCounter[0] % 3 == 0:
+                    newVal[0] = 0
+                else:
+                    newVal[0] = 1
+                logger.log("Sending update [" + str(formatted_time) + "]", 'd')
+                last_successful_update[0] = current_time
+                data = {
+                            #"LastUpdate": str(formatted_time),
+                            "IsRainDelay": newVal[0],
+                            "RunTimes": water_dict['conf']['run_times']
+                            # "RunTimes": [
+                            #     [1 + newVal[0], 2, 3, 4, 5, 6, 7, 8],
+                            #     [2, 2, 3, 4, 5, 6, 7, 8],
+                            #     [3, 2, 3, 4, 5, 6, 7, 8],
+                            #     [4, 2, 3, 4, 5, 6, 7, 8],
+                            #     [5, 2, 3, 4, 5, 6, 7, 8],
+                            #     [6, 2, 3, 4, 5, 6, 7, 8],
+                            #     [7, 2, 3, 4, 5, 6, 7, 8],
+                            #     [8, 2, 3, 4, 5, 6, 7, 8]
+                            # ]
+                        }
+                        
+                updateCounter[0] += 1                      
+                logger.log("calling http_post************************")
+                request.http_post('update', data, {'Content-Type': 'application/json'})
+            except Exception as ex:
+                logger.log('Exception: ' + str(ex), 'e')
+    except Exception as ex:
+        logger.log("Exception in SendUpdate: [" + str(ex) + "]", 'e')
+
+
     
 def main(scr):
 
@@ -260,14 +310,41 @@ def main(scr):
     #threads.append(thread2)
     #threads.append(thread3)
     
-    #request = Request('http://192.168.1.106/', ll)
+    request = Request('https://192.168.1.105:7131/', ll)
+    
+    try:
+        n = datetime.now()#("1/4/2024 2:33:09 PM", '%m/%d/%Y %I:%M:%S %p')
+        ll.log("n$$$$$$$$$$$$$$$$$$$$: " + str(n))
+        
+        current_time = datetime.now().strftime("%m/%d/%Y %I:%M:%S %p")
+        #formatted_time = current_time.strftime("%m/%d/%Y %I:%M:%S %p")
+        ll.log("formatted_time:$$$$$$$$$$$ " + str(current_time))
+        
+        
+        data = {
+                    "LastUpdate": str(current_time),
+                    "IsRainDelay": 0,
+                    "RunTimes": [
+                        [1],
+                        [2]
+                    ]
+                }
+        ll.log("calling http_post************************")
+        request.http_post('update', data, {'Content-Type': 'application/json'})
+    except Exception as ex:
+        ll.log('Exception: ' + str(ex), 'e')
+    #event_quit.set()
+
+    
     
     #mail = e_mail.e_mail()
-    now = datetime.now()
+    #now = datetime.now()
+    
     #mail.send_mail('from WaterThread ctor', str(now))
     count = 0
     while not event_quit.is_set():
 
+        send_update(water_dict, ll)
         read_keyboard(scr, event_quit, is_man_run, mode, ll, water_dict, last_key)
 
         # if cf.check_for_update(run_times_mode, mode):
