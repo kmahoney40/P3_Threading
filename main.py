@@ -11,7 +11,8 @@ import HttpThread
 import logger
 #import e_mail
 from Request import Request
-
+from flask import Flask, request, jsonify
+from werkzeug.serving import make_server
 
 
 # These will become JSON
@@ -148,7 +149,7 @@ def adj_man_time(inCh, logger):
     valid_key_press = ['a','s','d','f','g','h','j','A','S','D','F','G','H','J','z','x','c','v','b','n','m','Z','X','C','V','B','N','M']
     if inCh in valid_key_press:
         logger.log("INSIDE adj_man_times inCh: " + str(inCh), "d")
-        # idx is for a list and we want to skip the 1st element, as the frist element of run_times is not actually a ru time
+        # idx is for a  v and we want to skip the 1st element, as the frist element of run_times is not actually a ru time
         idx = valid_key_press.index(inCh)
         if inCh.isupper():
             d_time = 5
@@ -243,6 +244,36 @@ def send_update(water_dict, logger):
         logger.log("Exception in SendUpdate: [" + str(ex) + "]", 'e')
 
 
+
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return 'Hello, world!'
+
+@app.route('/another-endpoint')
+def another_endpoint():
+    return 'This is another endpoint.'
+
+class ServerThread(threading.Thread):
+
+    def __init__(self, app):
+        threading.Thread.__init__(self)
+        self.srv = make_server('0.0.0.0', 5000, app)
+        self.ctx = app.app_context()
+        self.ctx.push()
+
+    def run(self):
+        self.srv.serve_forever()
+
+    def shutdown(self):
+        self.srv.shutdown()
+    
+server_thread = ServerThread(app)
+server_thread.start()
+
+    
     
 def main(scr):
 
@@ -297,6 +328,7 @@ def main(scr):
     # Create new threads
     threads = []
     thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run)
+    #thread2 = threading.Thread(target=run_flask)
     #thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
     #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
     
@@ -309,6 +341,8 @@ def main(scr):
     threads.append(thread1)
     #threads.append(thread2)
     #threads.append(thread3)
+    
+    #run_flask()
     
     request = Request('https://192.168.1.105:7131/', ll)
     
@@ -370,6 +404,8 @@ def main(scr):
         time.sleep(1.1)
 
     # Wait for all threads to complete
+    server_thread.shutdown()
+    server_thread.join()
     for t in threads:
         ll.log("JOIN")
         t.join()
