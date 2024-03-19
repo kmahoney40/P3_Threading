@@ -50,6 +50,10 @@ disp_run_times = []
 day = [0] #0 - 6 for day of week
 man_value = 0 #0 - 6 for valve to manually run
 
+#KMDB use this to stop the water thread when the web server has updated the run times. When water thread is stopped the irrigation.conf file is updated
+# then the water thread is restarted with the new run times.
+event_stop_water_thread = threading.Event()
+
 
 updateCounter = [0]
 newVal = [0]
@@ -250,16 +254,20 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
+    event_stop_water_thread.set()
     return 'Hello, world!'
 
 @app.route('/another-endpoint')
 def another_endpoint():
+    event_stop_water_thread.clear()
+
     return 'This is another endpoint.'
 
-class ServerThread(threading.Thread):
+class ApiThread(threading.Thread):
 
-    def __init__(self, app):
+    def __init__(self, app, e_stop_water_thread):
         threading.Thread.__init__(self)
+        count = 0
         self.srv = make_server('0.0.0.0', 5000, app)
         self.ctx = app.app_context()
         self.ctx.push()
@@ -270,7 +278,7 @@ class ServerThread(threading.Thread):
     def shutdown(self):
         self.srv.shutdown()
     
-server_thread = ServerThread(app)
+server_thread = ApiThread(app, event_stop_water_thread)
 server_thread.start()
 
     
@@ -304,7 +312,6 @@ def main(scr):
 
     # set when operator presses 'q'
     event_quit = threading.Event()
-    event_reload = threading.Event()
 
     test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
     cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
@@ -327,7 +334,7 @@ def main(scr):
 
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
     #thread2 = threading.Thread(target=run_flask)
     #thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
     #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
@@ -386,6 +393,8 @@ def main(scr):
         #     water_dict['conf'] = test_dict
         ll.log("main is_man_run[0]: " + str(is_man_run[0]))
 
+        ll.log("Water THREAD is_alive(): " + str(threads[0].is_alive()))
+
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]), "d")
         if water_dict["man_mode"] == 0:
             mode[0] = "Water"
@@ -401,6 +410,17 @@ def main(scr):
         body_win.refresh()
         foot_win.refresh()
 
+        if threads[0].is_alive() and event_stop_water_thread.is_set():
+            ll.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$threads[0].is_alive() and event_stop_water_thread.is_set() is True", "d")
+            #threads[0].shutdown()
+            threads[0].join()
+            #cf.write_conf(water_dict['conf'])
+            #thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict
+        elif not threads[0].is_alive() and not event_stop_water_thread.is_set():
+            ll.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@not threads[0].is_alive() and not event_stop_water_thread.is_set() is True", "d")
+            thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
+            thread1.start()
+            threads[0] = thread1
         time.sleep(1.1)
 
     # Wait for all threads to complete

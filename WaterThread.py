@@ -14,13 +14,14 @@ import json
 # relay-plate. The shared innput dictionary can be expanded to include weather data that may be used
 # to dynamically modify runtimes.
 class WaterThread(threading.Thread):
-    def __init__(self, threadID, name, logger, in_dict, e_quit, is_man_run):
+    def __init__(self, threadID, name, logger, in_dict, e_quit, is_man_run, e_stop_water_thread):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.ll = logger
         self.in_dict = in_dict
         self.e_quit = e_quit
+        self.e_stop_water_thread = e_stop_water_thread
         self.is_man_run = is_man_run
         self.previous_man_run = False
         self.pid = self.in_dict['conf']['pid']
@@ -136,8 +137,9 @@ class WaterThread(threading.Thread):
     # set_valves    
 
     def run(cls):
-        count = 0
-        while not cls.e_quit.is_set():
+        while not cls.e_quit.is_set() and not cls.e_stop_water_thread.is_set():
+
+            cls.ll.log("WATER THREAD" + " threadID: " + "WATER THREAS IS RUNNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())
