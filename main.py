@@ -9,7 +9,6 @@ import WaterThread
 import TempThread
 import HttpThread
 import logger
-#import e_mail
 from Request import Request
 from flask import Flask, request, jsonify
 from werkzeug.serving import make_server
@@ -249,19 +248,21 @@ def send_update(water_dict, logger):
 
 
 
-
 app = Flask(__name__)
 
 @app.route('/')
 def index():
+    #thread.set() stops the thread
     event_stop_water_thread.set()
-    return 'Hello, world!'
+    return 'WaterThread stopped. Hello, world!'
 
 @app.route('/another-endpoint')
 def another_endpoint():
+    #read the .conf file and update the water_dict
+    
+    #thread.clear() starts the thread
     event_stop_water_thread.clear()
-
-    return 'This is another endpoint.'
+    return 'WaterThread started. This is another endpoint.'
 
 class ApiThread(threading.Thread):
 
@@ -278,9 +279,6 @@ class ApiThread(threading.Thread):
     def shutdown(self):
         self.srv.shutdown()
     
-server_thread = ApiThread(app, event_stop_water_thread)
-server_thread.start()
-
     
     
 def main(scr):
@@ -332,12 +330,12 @@ def main(scr):
             rt[d] += str(water_dict["conf"]["run_times"][d][t])
         ll.log("setup - run_times[]: " + rt[d])
 
+    server_thread = ApiThread(app, event_stop_water_thread)
+    server_thread.start()
+    
     # Create new threads
     threads = []
     thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
-    #thread2 = threading.Thread(target=run_flask)
-    #thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
-    #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
     
     # Start new Threads
     thread1.start()
