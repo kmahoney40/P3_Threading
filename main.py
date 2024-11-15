@@ -239,8 +239,8 @@ def send_update(water_dict, logger):
                         }
                         
                 updateCounter[0] += 1                      
-                logger.log("calling http_post************************")
-                request.http_post('update', data, {'Content-Type': 'application/json'})
+                #logger.log("calling http_post************************")
+                #request.http_post('update', data, {'Content-Type': 'application/json'})
             except Exception as ex:
                 logger.log('Exception: ' + str(ex), 'e')
     except Exception as ex:
@@ -259,6 +259,17 @@ def index():
 @app.route('/another-endpoint')
 def another_endpoint():
     #read the .conf file and update the water_dict
+    
+    try:
+        test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+        cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+        #test_dict = cf.read_conf('r')
+
+        #water_dict['conf'] = test_dict
+    except Exception as ex:
+        ll.log('Exception in /another-endpoint: ' + str(ex), 'e')
+        event_quit.set()
+    
     
     #thread.clear() starts the thread
     event_stop_water_thread.clear()
@@ -317,7 +328,7 @@ def main(scr):
 
     water_dict['conf'] = test_dict
 
-    # We use the logger in ConfFile with the defualt value 'DEBUG' after loading the conf 
+    # We use the logger in ConfFile with the default value 'DEBUG' after loading the conf 
     # file set the log_level to the level in the config file.
     ll.update_log_level(water_dict['conf']['log_level'])   
 
@@ -369,7 +380,7 @@ def main(scr):
                     ]
                 }
         ll.log("calling http_post************************")
-        request.http_post('update', data, {'Content-Type': 'application/json'})
+        #request.http_post('update', data, {'Content-Type': 'application/json'})
     except Exception as ex:
         ll.log('Exception: ' + str(ex), 'e')
     #event_quit.set()
@@ -382,6 +393,10 @@ def main(scr):
     #mail.send_mail('from WaterThread ctor', str(now))
     count = 0
     while not event_quit.is_set():
+
+        # Move cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+        # and all the other loading into a function that is called here when an event is set/cleared.
+        # The flask endpoints will set the event and the main loop will call the function to reload the conf file.
 
         send_update(water_dict, ll)
         read_keyboard(scr, event_quit, is_man_run, mode, ll, water_dict, last_key)
