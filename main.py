@@ -260,15 +260,15 @@ def index():
 def another_endpoint():
     #read the .conf file and update the water_dict
     
-    try:
-        test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
-        cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+    #try:
+        #test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+        #cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
         #test_dict = cf.read_conf('r')
 
         #water_dict['conf'] = test_dict
-    except Exception as ex:
-        ll.log('Exception in /another-endpoint: ' + str(ex), 'e')
-        event_quit.set()
+    #except Exception as ex:
+    #    ll.log('Exception in /another-endpoint: ' + str(ex), 'e')
+    #    event_quit.set()
     
     
     #thread.clear() starts the thread
@@ -289,6 +289,19 @@ class ApiThread(threading.Thread):
 
     def shutdown(self):
         self.srv.shutdown()
+    
+    
+    
+    
+def read_conf_file(ll):
+    test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+    cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+    test_dict = cf.read_conf('r')
+    water_dict['conf'] = test_dict
+
+    
+    
+    
     
     
     
@@ -401,9 +414,6 @@ def main(scr):
         send_update(water_dict, ll)
         read_keyboard(scr, event_quit, is_man_run, mode, ll, water_dict, last_key)
 
-        # if cf.check_for_update(run_times_mode, mode):
-        #     test_dict = cf.read_conf('r')
-        #     water_dict['conf'] = test_dict
         ll.log("main is_man_run[0]: " + str(is_man_run[0]))
 
         ll.log("Water THREAD is_alive(): " + str(threads[0].is_alive()))
@@ -431,6 +441,13 @@ def main(scr):
             #thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict
         elif not threads[0].is_alive() and not event_stop_water_thread.is_set():
             ll.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@not threads[0].is_alive() and not event_stop_water_thread.is_set() is True", "d")
+            
+            test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+            cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+            test_dict = cf.read_conf('r')
+            water_dict['conf'] = test_dict
+            #read_conf_file(ll)
+            
             thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
             thread1.start()
             threads[0] = thread1
