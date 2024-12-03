@@ -140,6 +140,7 @@ class WaterThread(threading.Thread):
         while not cls.e_quit.is_set() and not cls.e_stop_water_thread.is_set():
 
             cls.ll.log("WATER THREAD" + " threadID: " + "WATER THREAD IS RUNNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            cls.ll.log("WATER THREAD" + " run_times: " + str(cls.run_times))
 
             now = datetime.now()
             now_in_sec = int((now - now.replace(hour=0, minute=0, second=0,microsecond=0)).total_seconds())

@@ -17,14 +17,20 @@ class ConfFile:
         conf_file = open("irrigation.conf", mode)
         conf_data = conf_file.read()
         conf_json = json.loads(conf_data)
-        cls.ll.log("conf_json: " + str(conf_json))
         conf_file.close()
+        cls.ll.log("conf_json: " + str(conf_json))
 
         return conf_json
 
     def write_conf(cls, conf_json):
-        conf_file = open("irrigation2.conf", "w")
-        conf_file.write(json.dumps(conf_json))
+        # conf_file = open("irrigation.conf", "w")
+        cls.ll.log("^^^^^^^^^^^^^^^^^^^^^^^^ ConfFile.write_conf conf_json: " + json.dumps(conf_json))
+        # conf_file.write(conf_json)
+        # conf_file.close()
+        
+        with open('irrigation.conf', 'w') as conf_file:
+            json.dump(conf_json, conf_file)
+        
         return 0        
 
 
