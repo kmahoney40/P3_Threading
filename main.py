@@ -1,6 +1,7 @@
 import threading
 from datetime import datetime
 import time
+import copy
 import curses
 import sys
 import json
@@ -9,7 +10,6 @@ import WaterThread
 import TempThread
 import HttpThread
 import logger
-#import e_mail
 from Request import Request
 from flask import Flask, request, jsonify
 from werkzeug.serving import make_server
@@ -36,6 +36,8 @@ water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining":
                 }
             }
 
+new_water_dict_conf = [""]#water_dict['conf']['run_times'].tostring()
+
 daqc_dict = [0,0,0,0,0,0,0,0]
 days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
@@ -49,6 +51,10 @@ run_times = ["", "", "", "", "", "", ""]
 disp_run_times = []
 day = [0] #0 - 6 for day of week
 man_value = 0 #0 - 6 for valve to manually run
+
+#KMDB use this to stop the water thread when the web server has updated the run times. When water thread is stopped the irrigation.conf file is updated
+# then the water thread is restarted with the new run times.
+event_stop_water_thread = threading.Event()
 
 
 updateCounter = [0]
@@ -236,8 +242,8 @@ def send_update(water_dict, logger):
                         }
                         
                 updateCounter[0] += 1                      
-                logger.log("calling http_post************************")
-                request.http_post('update', data, {'Content-Type': 'application/json'})
+                #logger.log("calling http_post************************")
+                #request.http_post('update', data, {'Content-Type': 'application/json'})
             except Exception as ex:
                 logger.log('Exception: ' + str(ex), 'e')
     except Exception as ex:
@@ -245,21 +251,63 @@ def send_update(water_dict, logger):
 
 
 
-
 app = Flask(__name__)
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def index():
-    return 'Hello, world!'
+    #thread.set() stops the thread
+    event_stop_water_thread.set()
+    return 'WaterThread stopped. Hello, world!'
 
-@app.route('/another-endpoint')
+@app.route('/another-endpoint', methods=['GET'])
 def another_endpoint():
-    return 'This is another endpoint.'
+    #read the .conf file and update the water_dict
+    
+    #try:
+        #test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+        #cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+        #test_dict = cf.read_conf('r')
 
-class ServerThread(threading.Thread):
+        #water_dict['conf'] = test_dict
+    #except Exception as ex:
+    #    ll.log('Exception in /another-endpoint: ' + str(ex), 'e')
+    #    event_quit.set()
+    
+    
+    #thread.clear() starts the thread
+    event_stop_water_thread.clear()
+    return 'WaterThread started. This is another endpoint.'
 
-    def __init__(self, app):
+@app.route('/runtimes', methods=['GET'])
+def get_run_times():
+    return jsonify(water_dict['conf']['run_times'])
+
+#KMDB Hmmm, stop water thread before this call!! Also, check with AI, create global new_run_times and call write_conf in main loop when new_run_times is set
+@app.route('/update', methods=['POST'])
+def update_run_times():
+    data = json.dumps(request.json)  # Use request.form for form data or request.data for raw data
+    if data is None:
+        return jsonify({"error": "No JSON payload provided"})
+    #cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+
+    # stop the water thread before updating the run times
+    event_stop_water_thread.set()
+    #water_dict['conf']['run_times'] = data
+    new_water_dict_conf[0] = data#copy.deepcopy(json.loads(data))# copy.deepcopy(water_dict['conf']['run_times'])
+    
+    #wd = cf.read_conf('r')
+    #data = wd['conf']['run_times']
+    #cf.write_conf(water_dict['conf'])
+
+    # Process the data (example: log or return a response)
+    print(f"Received data: {data}")
+    return jsonify({"message": "Data received", "received_data": data})
+
+class ApiThread(threading.Thread):
+
+    def __init__(self, app, e_stop_water_thread):
         threading.Thread.__init__(self)
+        count = 0
         self.srv = make_server('0.0.0.0', 5000, app)
         self.ctx = app.app_context()
         self.ctx.push()
@@ -270,9 +318,19 @@ class ServerThread(threading.Thread):
     def shutdown(self):
         self.srv.shutdown()
     
-server_thread = ServerThread(app)
-server_thread.start()
+    
+    
+    
+def read_conf_file(ll):
+    test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+    cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+    test_dict = cf.read_conf('r')
+    water_dict['conf'] = test_dict
 
+    
+    
+    
+    
     
     
 def main(scr):
@@ -304,7 +362,6 @@ def main(scr):
 
     # set when operator presses 'q'
     event_quit = threading.Event()
-    event_reload = threading.Event()
 
     test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
     cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
@@ -312,7 +369,7 @@ def main(scr):
 
     water_dict['conf'] = test_dict
 
-    # We use the logger in ConfFile with the defualt value 'DEBUG' after loading the conf 
+    # We use the logger in ConfFile with the default value 'DEBUG' after loading the conf 
     # file set the log_level to the level in the config file.
     ll.update_log_level(water_dict['conf']['log_level'])   
 
@@ -325,12 +382,12 @@ def main(scr):
             rt[d] += str(water_dict["conf"]["run_times"][d][t])
         ll.log("setup - run_times[]: " + rt[d])
 
+    server_thread = ApiThread(app, event_stop_water_thread)
+    server_thread.start()
+    
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run)
-    #thread2 = threading.Thread(target=run_flask)
-    #thread2 = TempThread.daqcThread(2, "daqcThread", ll, daqc_dict, event_quit)
-    #thread3 = HttpThread.HttpThread(3, "httpThread", ll, water_dict, event_quit)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
     
     # Start new Threads
     thread1.start()
@@ -364,7 +421,7 @@ def main(scr):
                     ]
                 }
         ll.log("calling http_post************************")
-        request.http_post('update', data, {'Content-Type': 'application/json'})
+        #request.http_post('update', data, {'Content-Type': 'application/json'})
     except Exception as ex:
         ll.log('Exception: ' + str(ex), 'e')
     #event_quit.set()
@@ -378,13 +435,19 @@ def main(scr):
     count = 0
     while not event_quit.is_set():
 
+        # Move cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+        # and all the other loading into a function that is called here when an event is set/cleared.
+        # The flask endpoints will set the event and the main loop will call the function to reload the conf file.
+
         send_update(water_dict, ll)
         read_keyboard(scr, event_quit, is_man_run, mode, ll, water_dict, last_key)
 
-        # if cf.check_for_update(run_times_mode, mode):
-        #     test_dict = cf.read_conf('r')
-        #     water_dict['conf'] = test_dict
         ll.log("main is_man_run[0]: " + str(is_man_run[0]))
+
+        ll.log("Water THREAD is_alive(): " + str(threads[0].is_alive()))
+
+        ll.log("run times run times tun times: " + str(water_dict['conf']['run_times']))
+
 
         ll.log("water_dict['man_mode']: " + str(water_dict["man_mode"]), "d")
         if water_dict["man_mode"] == 0:
@@ -401,6 +464,46 @@ def main(scr):
         body_win.refresh()
         foot_win.refresh()
 
+        if threads[0].is_alive() and event_stop_water_thread.is_set():
+            
+            threads[0].join()
+            
+            ll.log("new_water_dict_conf new_water_dict_conf new_water_dict_conf: " + new_water_dict_conf[0])
+            ll.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$threads[0].is_alive() and event_stop_water_thread.is_set() is True", "d")
+            #event_quit.set()
+            #cf.write_conf(new_water_dict_conf[0])
+            ll.log("new_water_dict_conf2 new_water_dict_conf2 new_water_dict_conf2: " + json.dumps(test_dict))
+            test_dict['run_times'] = copy.deepcopy(json.loads(new_water_dict_conf[0]))
+            ll.log("new_water_dict_conf3 new_water_dict_conf3 new_water_dict_conf3: " + json.dumps(test_dict))
+            
+            cf.write_conf(test_dict)
+            
+            #threads[0].shutdown()
+            #threads[0].join()
+            event_stop_water_thread.clear()
+            ll.log("CLEAR event_stop_water_thread")
+            water_dict['conf'] = copy.deepcopy(test_dict)
+            ll.log("WATER_DICT " + json.dumps(water_dict))
+            
+            #threads = []
+            thread_1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
+            threads[0] = thread_1
+            # Start new Threads
+            thread_1.start()
+
+            #thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict
+        elif not threads[0].is_alive() and not event_stop_water_thread.is_set():
+            ll.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@not threads[0].is_alive() and not event_stop_water_thread.is_set() is True", "d")
+            
+            # test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
+            # cf = ConfFile.ConfFile(test_dict, ll, is_man_run, event_quit)
+            # test_dict = cf.read_conf('r')
+            # water_dict['conf'] = test_dict
+            #read_conf_file(ll)
+            
+            thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
+            thread1.start()
+            threads[0] = thread1
         time.sleep(1.1)
 
     # Wait for all threads to complete
@@ -419,7 +522,7 @@ if __name__ == '__main__':
         exit_string = "Quit by user or to reload conf file"
         curses.wrapper(main)
     except Exception as ex:
-        print("Exception in main() loop, trying to continue: " + str(ex))
+        print("Exception in main() loop, trying to continue: " + str(ex) + " " + str(sys.exc_info()[0]))
         exit_string = "Quit on error"
     finally:
         curses.endwin()
