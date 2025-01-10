@@ -9,6 +9,7 @@ import ConfFile
 import WaterThread
 import TempThread
 import HttpThread
+import flask_app
 import logger
 from Request import Request
 #from flask import Flask, request, jsonify
@@ -98,13 +99,6 @@ def display_body(win, logger):
             win.addstr(9, 3 + (v-1)*4, str(water_dict['conf']['run_times'][7][v]).rjust(3))
         win.addstr(10, 0, "Dn: 'z' 'x' 'c' 'v' 'b' 'n' 'm'")
         
-        win.addstr(12, 0, "Up:        '4' '5' '6' '7' '8' '9' '0'")
-        win.addstr(13, 0, "Day: " + days[day[0]] + "-")
-        win.clrtoeol()
-        for v in range(1,len(water_dict['conf']['run_times'][0])):
-            win.addstr(13, 10 + (v-1)*4, str(water_dict['conf']['run_times'][day[0]][v]).rjust(3))
-        win.addstr(14, 0, "Dn:        'f' 'g' 'h' 'j' 'k' 'l' ';'")
-
         logger.log("water_dict['conf']['run_times'][7]: " + str(water_dict['conf']['run_times'][7]))
     except:
         logger.log("Error in display_body: " + str(sys.exc_info()[0]))
@@ -249,55 +243,8 @@ def send_update(water_dict, logger):
                 logger.log('Exception: ' + str(ex), 'e')
     except Exception as ex:
         logger.log("Exception in SendUpdate: [" + str(ex) + "]", 'e')
+# send_update
 
-
-# app = Flask(__name__)
-
-# @app.route('/', methods=['GET'])
-# def index():
-#     event_stop_water_thread.set()
-#     return 'WaterThread stopped. Hello, world!'
-
-# @app.route('/another-endpoint', methods=['GET'])
-# def another_endpoint():
-#     event_stop_water_thread.clear()
-#     return 'WaterThread started. This is another endpoint.'
-
-# @app.route('/runtimes', methods=['GET'])
-# def get_run_times():
-#     return jsonify(water_dict['conf']['run_times'])
-
-# #KMDB Hmmm, stop water thread before this call!! Also, check with AI, create global new_run_times and call write_conf in main loop when new_run_times is set
-# @app.route('/update', methods=['POST'])
-# def update_run_times():
-#     data = json.dumps(request.json)  # Use request.form for form data or request.data for raw data
-#     if data is None:
-#         return jsonify({"error": "No JSON payload provided"})
-
-#     # stop the water thread before updating the run times
-#     event_stop_water_thread.set()
-#     new_water_dict_conf[0] = data
-    
-#     # Process the data (example: log or return a response)
-#     print(f"Received data: {data}")
-#     return jsonify({"message": "Data received", "received_data": data})
-# def update_run_times
-
-# class ApiThread(threading.Thread):
-
-#     def __init__(self, app, e_stop_water_thread):
-#         threading.Thread.__init__(self)
-#         count = 0
-#         self.srv = make_server('0.0.0.0', 5000, app)
-#         self.ctx = app.app_context()
-#         self.ctx.push()
-
-#     def run(self):
-#         self.srv.serve_forever()
-
-#     def shutdown(self):
-#         self.srv.shutdown()
-    
 def main(scr):
 
     scr = curses.initscr()
@@ -347,13 +294,12 @@ def main(scr):
             rt[d] += str(water_dict["conf"]["run_times"][d][t])
         ll.log("setup - run_times[]: " + rt[d])
 
-
-    # server_thread = ApiThread(app, event_stop_water_thread)
-    # server_thread.start()
-    flask_app = FlaskApp(event_stop_water_thread)
-    flask_thread = threading.Thread(target=flask_app.run, daemon=True)
-    flask_thread.start()
-    
+    ll.log("BEFORE FlaskApp")
+    # Start the Flask server in its own thread
+    flask_app = FlaskApp(ll, water_dict, new_water_dict_conf, event_stop_water_thread)
+    ll.log("AFTER FlaskApp")
+    server_thread = threading.Thread(target=flask_app.run, daemon=True)
+    server_thread.start()
     
     # Create new threads
     threads = []
@@ -467,10 +413,10 @@ def main(scr):
             thread1.start()
             threads[0] = thread1
         time.sleep(1.1)
-
+    # while not event_quit.is_set():
+    
     # Wait for all threads to complete
-    # server_thread.shutdown()
-    # server_thread.join()
+    flask_app.shutdown()
     for t in threads:
         ll.log("JOIN")
         t.join()
