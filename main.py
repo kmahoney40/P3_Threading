@@ -11,9 +11,10 @@ import TempThread
 import HttpThread
 import logger
 from Request import Request
-from flask import Flask, request, jsonify
-from werkzeug.serving import make_server
-
+#from flask import Flask, request, jsonify
+#from werkzeug.serving import make_server
+from flask_app import FlaskApp
+#from flask_app import FlaskApp, run as run_flask
 
 # These will become JSON
 #water_dict = [0, {"start_time": 600}]
@@ -250,88 +251,52 @@ def send_update(water_dict, logger):
         logger.log("Exception in SendUpdate: [" + str(ex) + "]", 'e')
 
 
+# app = Flask(__name__)
 
-app = Flask(__name__)
+# @app.route('/', methods=['GET'])
+# def index():
+#     event_stop_water_thread.set()
+#     return 'WaterThread stopped. Hello, world!'
 
-@app.route('/', methods=['GET'])
-def index():
-    #thread.set() stops the thread
-    event_stop_water_thread.set()
-    return 'WaterThread stopped. Hello, world!'
+# @app.route('/another-endpoint', methods=['GET'])
+# def another_endpoint():
+#     event_stop_water_thread.clear()
+#     return 'WaterThread started. This is another endpoint.'
 
-@app.route('/another-endpoint', methods=['GET'])
-def another_endpoint():
-    #read the .conf file and update the water_dict
-    
-    #try:
-        #test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
-        #cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
-        #test_dict = cf.read_conf('r')
+# @app.route('/runtimes', methods=['GET'])
+# def get_run_times():
+#     return jsonify(water_dict['conf']['run_times'])
 
-        #water_dict['conf'] = test_dict
-    #except Exception as ex:
-    #    ll.log('Exception in /another-endpoint: ' + str(ex), 'e')
-    #    event_quit.set()
-    
-    
-    #thread.clear() starts the thread
-    event_stop_water_thread.clear()
-    return 'WaterThread started. This is another endpoint.'
+# #KMDB Hmmm, stop water thread before this call!! Also, check with AI, create global new_run_times and call write_conf in main loop when new_run_times is set
+# @app.route('/update', methods=['POST'])
+# def update_run_times():
+#     data = json.dumps(request.json)  # Use request.form for form data or request.data for raw data
+#     if data is None:
+#         return jsonify({"error": "No JSON payload provided"})
 
-@app.route('/runtimes', methods=['GET'])
-def get_run_times():
-    return jsonify(water_dict['conf']['run_times'])
+#     # stop the water thread before updating the run times
+#     event_stop_water_thread.set()
+#     new_water_dict_conf[0] = data
+    
+#     # Process the data (example: log or return a response)
+#     print(f"Received data: {data}")
+#     return jsonify({"message": "Data received", "received_data": data})
+# def update_run_times
 
-#KMDB Hmmm, stop water thread before this call!! Also, check with AI, create global new_run_times and call write_conf in main loop when new_run_times is set
-@app.route('/update', methods=['POST'])
-def update_run_times():
-    data = json.dumps(request.json)  # Use request.form for form data or request.data for raw data
-    if data is None:
-        return jsonify({"error": "No JSON payload provided"})
-    #cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
+# class ApiThread(threading.Thread):
 
-    # stop the water thread before updating the run times
-    event_stop_water_thread.set()
-    #water_dict['conf']['run_times'] = data
-    new_water_dict_conf[0] = data#copy.deepcopy(json.loads(data))# copy.deepcopy(water_dict['conf']['run_times'])
-    
-    #wd = cf.read_conf('r')
-    #data = wd['conf']['run_times']
-    #cf.write_conf(water_dict['conf'])
+#     def __init__(self, app, e_stop_water_thread):
+#         threading.Thread.__init__(self)
+#         count = 0
+#         self.srv = make_server('0.0.0.0', 5000, app)
+#         self.ctx = app.app_context()
+#         self.ctx.push()
 
-    # Process the data (example: log or return a response)
-    print(f"Received data: {data}")
-    return jsonify({"message": "Data received", "received_data": data})
+#     def run(self):
+#         self.srv.serve_forever()
 
-class ApiThread(threading.Thread):
-
-    def __init__(self, app, e_stop_water_thread):
-        threading.Thread.__init__(self)
-        count = 0
-        self.srv = make_server('0.0.0.0', 5000, app)
-        self.ctx = app.app_context()
-        self.ctx.push()
-
-    def run(self):
-        self.srv.serve_forever()
-
-    def shutdown(self):
-        self.srv.shutdown()
-    
-    
-    
-    
-def read_conf_file(ll):
-    test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
-    cf = ConfFile.ConfFile(test_dict['conf'], ll, is_man_run, event_quit)
-    test_dict = cf.read_conf('r')
-    water_dict['conf'] = test_dict
-
-    
-    
-    
-    
-    
+#     def shutdown(self):
+#         self.srv.shutdown()
     
 def main(scr):
 
@@ -382,8 +347,13 @@ def main(scr):
             rt[d] += str(water_dict["conf"]["run_times"][d][t])
         ll.log("setup - run_times[]: " + rt[d])
 
-    server_thread = ApiThread(app, event_stop_water_thread)
-    server_thread.start()
+
+    # server_thread = ApiThread(app, event_stop_water_thread)
+    # server_thread.start()
+    flask_app = FlaskApp(event_stop_water_thread)
+    flask_thread = threading.Thread(target=flask_app.run, daemon=True)
+    flask_thread.start()
+    
     
     # Create new threads
     threads = []
@@ -465,27 +435,25 @@ def main(scr):
         foot_win.refresh()
 
         if threads[0].is_alive() and event_stop_water_thread.is_set():
-            
+            # stop the water thread
             threads[0].join()
             
             ll.log("new_water_dict_conf new_water_dict_conf new_water_dict_conf: " + new_water_dict_conf[0])
             ll.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$threads[0].is_alive() and event_stop_water_thread.is_set() is True", "d")
-            #event_quit.set()
-            #cf.write_conf(new_water_dict_conf[0])
+
             ll.log("new_water_dict_conf2 new_water_dict_conf2 new_water_dict_conf2: " + json.dumps(test_dict))
             test_dict['run_times'] = copy.deepcopy(json.loads(new_water_dict_conf[0]))
             ll.log("new_water_dict_conf3 new_water_dict_conf3 new_water_dict_conf3: " + json.dumps(test_dict))
             
+            # Write the new run times to the conf file
             cf.write_conf(test_dict)
             
-            #threads[0].shutdown()
-            #threads[0].join()
             event_stop_water_thread.clear()
             ll.log("CLEAR event_stop_water_thread")
             water_dict['conf'] = copy.deepcopy(test_dict)
             ll.log("WATER_DICT " + json.dumps(water_dict))
             
-            #threads = []
+            # Create new instance of WaterThread, with the new run times
             thread_1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
             threads[0] = thread_1
             # Start new Threads
@@ -494,21 +462,15 @@ def main(scr):
             #thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict
         elif not threads[0].is_alive() and not event_stop_water_thread.is_set():
             ll.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@not threads[0].is_alive() and not event_stop_water_thread.is_set() is True", "d")
-            
-            # test_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining": " ", "conf": {} }
-            # cf = ConfFile.ConfFile(test_dict, ll, is_man_run, event_quit)
-            # test_dict = cf.read_conf('r')
-            # water_dict['conf'] = test_dict
-            #read_conf_file(ll)
-            
             thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
+            # start the thread and replace the old thread in the list
             thread1.start()
             threads[0] = thread1
         time.sleep(1.1)
 
     # Wait for all threads to complete
-    server_thread.shutdown()
-    server_thread.join()
+    # server_thread.shutdown()
+    # server_thread.join()
     for t in threads:
         ll.log("JOIN")
         t.join()
