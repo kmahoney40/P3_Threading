@@ -14,18 +14,20 @@ import json
 # relay-plate. The shared innput dictionary can be expanded to include weather data that may be used
 # to dynamically modify runtimes.
 class WaterThread(threading.Thread):
-    def __init__(self, threadID, name, logger, in_dict, e_quit, is_man_run, e_stop_water_thread):
+    def __init__(self, threadID, name, logger, in_dict, e_quit, is_man_run, e_garage_door, e_stop_water_thread):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.ll = logger
         self.in_dict = in_dict
         self.e_quit = e_quit
+        self.e_garage_door = e_garage_door
         self.e_stop_water_thread = e_stop_water_thread
         self.is_man_run = is_man_run
         self.previous_man_run = False
         self.pid = self.in_dict['conf']['pid']
         self.relay_board = RelayBoard(self.pid, logger, e_quit)
+        self.second_board = RelayBoard(self.pid + 1, logger, e_quit)
         #self.request = Request('http://192.168.1.106/', logger)
         self.last_update = 'lastupdate'
 
@@ -62,6 +64,7 @@ class WaterThread(threading.Thread):
         #self.local_start_time = self.start_time
         self.ll.log("confJson.[start_time]: " + str(self.start_time) )#+ " local_start_time: " + str(self.local_start_time))
         self.relay_board.set_all_relays(0)
+        self.second_board.set_all_relays(0)
     # __init__
 
     def set_run_today(cls, now_in_sec):
@@ -152,6 +155,18 @@ class WaterThread(threading.Thread):
             #cls.local_start_time = now_in_sec - cls.start_time
             cls.in_dict['valve_status'] = 0
             
+            
+            if cls.e_garage_door.is_set():
+                #cls.second_board.relay_on(1)
+                #cls.second_board.relay_on(2)
+                #cls.second_board.relay_on(3)
+                #cls.second_board.relay_on(4)
+                cls.second_board.relay_on(5)
+                #cls.second_board.relay_on(6)
+                #cls.second_board.relay_on(7)
+                cls.ll.log("cls.second_board.relay_on(2) in if")
+            
+            
             # set_valves does not depend on mode Water or Manual
             if not cls.set_valves(now_in_sec):
                 # now_in_sec is outside the min/max run_times, or man_mode just completed - reset to water mode water mode
@@ -161,8 +176,17 @@ class WaterThread(threading.Thread):
 
             cls.ll.log("WATER THREAD" + " threadID: " + str(cls.threadID))
 
-            # pause loop
-            cls.e_quit.wait(timeout=5.0)
+            if cls.e_garage_door.is_set():
+                cls.ll.log("cls.e_garage_door.is_set")
+                cls.e_quit.wait(timeout=1.0)
+                cls.ll.log("cls.e_garage_door.is_set AFTER 1 sec wait")
+                cls.second_board.relay_off(5)
+                cls.e_garage_door.clear()
+                cls.ll.log("cls.e_garage_door.clear()")
+                #cls.e_quit.set()
+            else:
+                # pause loop
+                cls.e_quit.wait(timeout=5.0)
         # while
         cls.relay_board.set_all_relays(0)
     # run

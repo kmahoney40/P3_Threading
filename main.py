@@ -16,6 +16,8 @@ from Request import Request
 #from werkzeug.serving import make_server
 from flask_app import FlaskApp
 #from flask_app import FlaskApp, run as run_flask
+from helpers_main import *
+
 
 # These will become JSON
 #water_dict = [0, {"start_time": 600}]
@@ -41,7 +43,6 @@ water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining":
 new_water_dict_conf = [""]#water_dict['conf']['run_times'].tostring()
 
 daqc_dict = [0,0,0,0,0,0,0,0]
-days = ["Mon ", "Tue ", "Wed ", "Th  ", "Fri ", "Sat ", "Sun "]
 mode = ["Water"]
 e_mode = ""
 is_man_run = [False]
@@ -57,66 +58,9 @@ man_value = 0 #0 - 6 for valve to manually run
 #KMDB use this to stop the water thread when the web server has updated the run times. When water thread is stopped the irrigation.conf file is updated
 # then the water thread is restarted with the new run times.
 event_stop_water_thread = threading.Event()
-
-
+event_garage_door = threading.Event()
 updateCounter = [0]
 newVal = [0]
-
-def display_head(win, logger, mode):
-    try:
-        now = datetime.now()
-        now_formated = now.strftime("%m/%d/%Y, %H:%M:%S")#datetime.now()
-        win.addstr(0, 0, "Now: " +  now_formated + "   Mode: " + mode + " Auto Start Time: " + str(water_dict["conf"]["start_time"]))
-        win.clrtoeol()
-    except:
-        logger.log("Error in display_head: " + str(sys.exc_info()[0]))
-# display_head
-
-def display_body(win, logger):
-    try:
-        win.addstr(0, 0, "Start Time: " + str(water_dict["conf"]["start_time"]))
-        num_runs = len(water_dict["conf"]["run_times"])
-        num_valves = 7
-
-        for valve in range(num_valves):
-            mask = 1 << valve
-            state = water_dict["valve_status"] & mask
-            on_off = "OFF"
-            if state:
-                on_off = "ON  Reamaining: " + water_dict["time_remaining"]
-            win.addstr(0 + valve, 0, "Valve " + str(valve+1) + " state: " + on_off)
-            win.clrtoeol()
-
-        for run in range(num_runs - 1):
-            win.addstr(0 + run, 43, days[run])
-            for valve in range(1, num_valves + 1):
-                win.addstr(0 + run, 41 + 4 + valve*4, str(water_dict["conf"]["run_times"][run][valve]).rjust(2))
-            win.clrtoeol()
-
-        win.addstr(8, 0, "Up: 'a' 's' 'd' 'f' 'g' 'h' 'j'")
-        # man_times length is 8, extra is used in calculations in WaterThread
-        for v in range(1,len(water_dict['conf']['run_times'][7])):
-            win.addstr(9, 3 + (v-1)*4, str(water_dict['conf']['run_times'][7][v]).rjust(3))
-        win.addstr(10, 0, "Dn: 'z' 'x' 'c' 'v' 'b' 'n' 'm'")
-        
-        logger.log("water_dict['conf']['run_times'][7]: " + str(water_dict['conf']['run_times'][7]))
-    except:
-        logger.log("Error in display_body: " + str(sys.exc_info()[0]))
-# display_body
-
-def display2_body(win, logger):
-    try:
-        logger.log("display2_body: " + str(sys.exc_info()[0]), "d")
-    except:
-        logger.log("Error in display2_body: " + str(sys.exc_info()[0]), "e")
-
-def display_foot(win, logger):
-    try:
-        win.addstr(0, 0, "Footer line 1", curses.A_UNDERLINE)
-        win.addstr(1, 0, "FooterLine 2", curses.A_UNDERLINE)
-    except:
-        logger.log("Error in display_foot: " + str(sys.exc_info()[0]))
-# display_foot
 
 
 def adj_run_times(inCh, logger, water_dict):
@@ -296,14 +240,14 @@ def main(scr):
 
     ll.log("BEFORE FlaskApp")
     # Start the Flask server in its own thread
-    flask_app = FlaskApp(ll, water_dict, new_water_dict_conf, event_stop_water_thread)
+    flask_app = FlaskApp(ll, water_dict, new_water_dict_conf, event_garage_door, event_stop_water_thread)
     ll.log("AFTER FlaskApp")
     server_thread = threading.Thread(target=flask_app.run, daemon=True)
     server_thread.start()
     
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_garage_door, event_stop_water_thread)
     
     # Start new Threads
     thread1.start()
@@ -372,9 +316,9 @@ def main(scr):
         ll.log("is_man_run[0]: " + str(is_man_run[0]))
         ll.log("water_dict['conf']: " + str(water_dict['conf']), "d")
 
-        display_head(headder_win, ll, mode[0])
-        display_foot(foot_win, ll)
-        display_body(body_win, ll)
+        display_head(headder_win, ll, mode[0], water_dict)
+        display_foot(foot_win, ll, curses.A_UNDERLINE)
+        display_body(body_win, ll, water_dict)
         
         headder_win.refresh()
         body_win.refresh()
@@ -427,7 +371,7 @@ def main(scr):
 
 if __name__ == '__main__':
     try:
-        exit_string = "Quit by user or to reload conf file"
+        exit_string = "Quit by user"
         curses.wrapper(main)
     except Exception as ex:
         print("Exception in main() loop, trying to continue: " + str(ex) + " " + str(sys.exc_info()[0]))

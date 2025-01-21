@@ -4,13 +4,14 @@ import json
 from werkzeug.serving import make_server
 
 class FlaskApp:
-    def __init__(self, logger, water_dict, new_water_dict_conf, e_stop_water_thread):
+    def __init__(self, logger, water_dict, new_water_dict_conf, e_garage_door, e_stop_water_thread):
         self.app = Flask(__name__)
         self.server = None  # Placeholder for the make_server instance
         self.lock = Lock()
         self.ll = logger
         self.water_dict = water_dict
         self.new_water_dict_conf = new_water_dict_conf
+        self.e_garage_door = e_garage_door
         self.e_stop_water_thread = e_stop_water_thread
         self.ll.log("FlaskApp init " + str(self.app.url_map))
         
@@ -32,7 +33,13 @@ class FlaskApp:
             with self.lock:
                 return jsonify({"message": "Data received", "received_data": "update_runtimes"})
         #def post_kmdb
-                
+
+        @self.app.route('/garage_door', methods=['GET'])
+        def garage_door():
+            with self.lock:
+                e_garage_door.set()
+                return jsonify({"message": "Garage door toggled"})
+        
         @self.app.route('/update_runtimes', methods=['POST'])
         def update_run_times():
             try:
