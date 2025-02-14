@@ -9,13 +9,11 @@ import ConfFile
 import WaterThread
 import TempThread
 import HttpThread
-import flask_app
 import logger
 from Request import Request
 #from flask import Flask, request, jsonify
 #from werkzeug.serving import make_server
 from flask_app import FlaskApp
-#from flask_app import FlaskApp, run as run_flask
 from helpers_main import *
 
 
@@ -41,6 +39,8 @@ water_dict = { "valve_status": 0, "man_mode": 0, "man_run": 0, "time_remaining":
             }
 
 new_water_dict_conf = [""]#water_dict['conf']['run_times'].tostring()
+tomorrow_in_sec = [0]
+delay_in_sec = [0]
 
 daqc_dict = [0,0,0,0,0,0,0,0]
 mode = ["Water"]
@@ -240,14 +240,14 @@ def main(scr):
 
     ll.log("BEFORE FlaskApp")
     # Start the Flask server in its own thread
-    flask_app = FlaskApp(ll, water_dict, new_water_dict_conf, event_garage_door, event_stop_water_thread)
+    flask_app = FlaskApp(ll, water_dict, new_water_dict_conf, tomorrow_in_sec, event_garage_door, event_stop_water_thread)
     ll.log("AFTER FlaskApp")
     server_thread = threading.Thread(target=flask_app.run, daemon=True)
     server_thread.start()
     
     # Create new threads
     threads = []
-    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_garage_door, event_stop_water_thread)
+    thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, tomorrow_in_sec, delay_in_sec, event_garage_door, event_stop_water_thread)
     
     # Start new Threads
     thread1.start()
@@ -316,13 +316,17 @@ def main(scr):
         ll.log("is_man_run[0]: " + str(is_man_run[0]))
         ll.log("water_dict['conf']: " + str(water_dict['conf']), "d")
 
-        display_head(headder_win, ll, mode[0], water_dict)
+        display_head(headder_win, ll, mode[0], water_dict, delay_in_sec)
         display_foot(foot_win, ll, curses.A_UNDERLINE)
         display_body(body_win, ll, water_dict)
         
         headder_win.refresh()
         body_win.refresh()
         foot_win.refresh()
+
+
+        #KMDB Add if now < 24hour_delay and !event_stop_water_thread.set()
+        #             event_stop_water_thread.set()
 
         if threads[0].is_alive() and event_stop_water_thread.is_set():
             # stop the water thread
@@ -344,7 +348,7 @@ def main(scr):
             ll.log("WATER_DICT " + json.dumps(water_dict))
             
             # Create new instance of WaterThread, with the new run times
-            thread_1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
+            thread_1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, tomorrow_in_sec, delay_in_sec, event_garage_door, event_stop_water_thread)
             threads[0] = thread_1
             # Start new Threads
             thread_1.start()
@@ -352,7 +356,7 @@ def main(scr):
             #thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict
         elif not threads[0].is_alive() and not event_stop_water_thread.is_set():
             ll.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@not threads[0].is_alive() and not event_stop_water_thread.is_set() is True", "d")
-            thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, event_stop_water_thread)
+            thread1 = WaterThread.WaterThread(1, "WaterThread", ll, water_dict, event_quit, is_man_run, tomorrow_in_sec, delay_in_sec, event_garage_door, event_stop_water_thread)
             # start the thread and replace the old thread in the list
             thread1.start()
             threads[0] = thread1

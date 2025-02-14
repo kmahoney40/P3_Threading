@@ -3,11 +3,12 @@ import time
 import sys
 
 
-def display_head(win, logger, mode, water_dict):
+def display_head(win, logger, mode, water_dict, delay_in_sec):
     try:
         now = datetime.now()
         now_formated = now.strftime("%m/%d/%Y, %H:%M:%S")#datetime.now()
-        win.addstr(0, 0, "Now: " +  now_formated + "   Mode: " + mode + " Auto Start Time: " + str(water_dict["conf"]["start_time"]))
+        #datetime_object = datetime.datetime.fromtimestamp(delay_in_sec[0])
+        win.addstr(0, 0, "Now: " +  now_formated + "   Mode: " + mode + " Auto Start Time: " + str(water_dict["conf"]["start_time"]) + " " + str(delay_in_sec))
         win.clrtoeol()
     except:
         logger.log("Error in display_head: " + str(sys.exc_info()[0]))

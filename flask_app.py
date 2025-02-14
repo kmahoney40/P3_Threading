@@ -1,16 +1,19 @@
+from datetime import datetime
 from threading import Lock
+import time
 from flask import Flask, jsonify, request
 import json
 from werkzeug.serving import make_server
 
 class FlaskApp:
-    def __init__(self, logger, water_dict, new_water_dict_conf, e_garage_door, e_stop_water_thread):
+    def __init__(self, logger, water_dict, new_water_dict_conf, tomorrow_in_sec, e_garage_door, e_stop_water_thread):
         self.app = Flask(__name__)
         self.server = None  # Placeholder for the make_server instance
         self.lock = Lock()
         self.ll = logger
         self.water_dict = water_dict
         self.new_water_dict_conf = new_water_dict_conf
+        self.tomorrow_in_sec = tomorrow_in_sec
         self.e_garage_door = e_garage_door
         self.e_stop_water_thread = e_stop_water_thread
         self.ll.log("FlaskApp init " + str(self.app.url_map))
@@ -28,10 +31,11 @@ class FlaskApp:
                 return jsonify(self.water_dict['conf']['run_times'])
         # def get_runtimes
 
-        @self.app.route('/post_kmdb', methods=['POST'])
+        @self.app.route('/24_hour_delay', methods=['POST'])
         def post_kmdb():
             with self.lock:
-                return jsonify({"message": "Data received", "received_data": "update_runtimes"})
+                self.tomorrow_in_sec[0] = 86400# int(time.time()) + 86400
+                return jsonify({"tomorrow": tomorrow_in_sec})
         #def post_kmdb
 
         @self.app.route('/garage_door', methods=['GET'])

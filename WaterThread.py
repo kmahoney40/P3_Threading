@@ -1,7 +1,7 @@
 import threading
 import time
 #import request
-from datetime import datetime
+from datetime import datetime, timedelta
 import enum
 from relay_board import RelayBoard
 import logger
@@ -14,7 +14,7 @@ import json
 # relay-plate. The shared innput dictionary can be expanded to include weather data that may be used
 # to dynamically modify runtimes.
 class WaterThread(threading.Thread):
-    def __init__(self, threadID, name, logger, in_dict, e_quit, is_man_run, e_garage_door, e_stop_water_thread):
+    def __init__(self, threadID, name, logger, in_dict, e_quit, is_man_run, tomorrow_in_sec, delay_in_sec, e_garage_door, e_stop_water_thread):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -24,6 +24,8 @@ class WaterThread(threading.Thread):
         self.e_garage_door = e_garage_door
         self.e_stop_water_thread = e_stop_water_thread
         self.is_man_run = is_man_run
+        self.tomorrow_in_sec = tomorrow_in_sec
+        self.delay_in_sec = delay_in_sec
         self.previous_man_run = False
         self.pid = self.in_dict['conf']['pid']
         self.relay_board = RelayBoard(self.pid, logger, e_quit)
@@ -69,6 +71,47 @@ class WaterThread(threading.Thread):
 
     def set_run_today(cls, now_in_sec):
         
+        cls.ll.log("----------------- cls.tomorrow_in_sec[0]: " + str(cls.tomorrow_in_sec[0]))
+        now = datetime.now()
+        cls.ll.log("----------------- now " + str(now))
+
+        if cls.tomorrow_in_sec[0] > 0:
+            # Get today's date and time
+            # Calculate the date for the day after tomorrow
+            day_after_tomorrow = now + timedelta(days=2)
+            cls.ll.log("----------------- day_after_tomorrow " + str(day_after_tomorrow))
+            # Create a new datetime object for 00:00:00 that day
+            midnight_day_after_tomorrow = datetime(day_after_tomorrow.year, day_after_tomorrow.month, day_after_tomorrow.day)
+            cls.ll.log("----------------- midnight_day_after_tomorrow " + str(midnight_day_after_tomorrow))
+            
+            if now > midnight_day_after_tomorrow:
+                cls.tomorrow_in_sec[0] = 0
+            else:
+                cls.ll.log("----------------- water off until " + str(midnight_day_after_tomorrow))
+                return
+
+        
+        # if now_in_sec < cls.tomorrow_in_sec[0]:
+        #     cls.this_run = [[0, 0, 0, 0, 0, 0 , 0, 0], [0, 0, 0, 0, 0, 0 , 0, 0]]
+            
+        #     cls.ll.log("----------------- cls.tomorrow_in_sec[0]: " + str(cls.tomorrow_in_sec[0]))
+        #     cls.ll.log("----------------- now_in_sec: " + str(now_in_sec))
+        #     cls.ll.log("----------------- cls.delay_in_sec[0]: " + str(cls.delay_in_sec[0]))
+        #     cls.ll.log("----------------- cls.tomorrow_in_sec[0]: " + str(cls.tomorrow_in_sec[0]))
+        #     cls.ll.log("----------------- now_in_sec: " + str(now_in_sec))
+        #     cls.ll.log("----------------- cls.delay_in_sec[0]: " + str(cls.delay_in_sec[0]))
+            
+        #     cls.delay_in_sec[0] = cls.tomorrow_in_sec[0] - now_in_sec
+        #     if cls.delay_in_sec[0] < 0:
+        #         cls.delay_in_sec[0] = 0
+        #     #cls.ll.log("now_in_sec: " + str(now_in_sec))
+        #     #cls.ll.log("tomorrow_in_sec[0]: " + str(cls.tomorrow_in_sec[0]))
+        #     return
+        
+        # if cls.tomorrow_in_sec[0] > 0:
+        #     cls.tomorrow_in_sec[0] = 0
+        #     cls.ll.log("tomorrow_in_sec[0]: " + str(cls.tomorrow_in_sec[0]))
+        
         cls.ll.log("is_man_run[0]: " + str(cls.is_man_run[0]))
 
         
@@ -113,7 +156,7 @@ class WaterThread(threading.Thread):
     # set_run_today
 
     def set_valves(cls, now_in_sec):
-        this_run_idx = 1 if cls.is_man_run[0] else 0
+        this_run_idx = 1 if cls.is_man_run[0] else 0 # ?: operator in C#
         now_in_range = False 
         cls.ll.log("cls.start_run[this_run_idx]: " + str(cls.start_run[this_run_idx]), "d")
         cls.ll.log("now_in_sec: " + str(now_in_sec), "d")
@@ -150,22 +193,23 @@ class WaterThread(threading.Thread):
             cls.day = datetime.today().weekday()
             
             # Set the current run times, todays times or the manual times
+            #if now > 24hour_delay default to 00:00:00
             cls.set_run_today(now_in_sec)
             
             #cls.local_start_time = now_in_sec - cls.start_time
             cls.in_dict['valve_status'] = 0
             
-            
+            #KMDB move this to a function, or another file, maybe a class
             if cls.e_garage_door.is_set():
-                #cls.second_board.relay_on(1)
-                #cls.second_board.relay_on(2)
-                #cls.second_board.relay_on(3)
-                #cls.second_board.relay_on(4)
                 cls.second_board.relay_on(5)
-                #cls.second_board.relay_on(6)
-                #cls.second_board.relay_on(7)
                 cls.ll.log("cls.second_board.relay_on(2) in if")
-            
+
+
+            # if now < 24hourdelay, then set all valves to off
+            # else
+            # if now > 24hourdelay, then set set 24hourdelay 00:00:00 and run set_valves
+            # in main 24hourdelay = datetime.now() + timedelta(days=1)
+            # to reset the 24hourdelay use 00:00:00 24hourdelay = datetime.combine(date.today(), datetime.min.time())
             
             # set_valves does not depend on mode Water or Manual
             if not cls.set_valves(now_in_sec):
